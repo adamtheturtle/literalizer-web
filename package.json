@@ -1,0 +1,39 @@
+{
+  "name": "literalizer-web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Browser-based interface for Literalizer",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "esbuild src/highlighter.js --bundle --minify --format=esm --outfile=dist/highlighter.js",
+    "check:generated": "npm run build && git diff --exit-code -- dist/highlighter.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint:css": "stylelint 'dist/**/*.css'",
+    "lint:html": "html-validate dist/index.html",
+    "lint:js": "eslint .",
+    "test": "vitest run tests/javascript",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.63.0",
+    "esbuild": "0.28.2",
+    "eslint": "10.11.0",
+    "globals": "17.12.0",
+    "highlight.js": "11.12.0",
+    "html-validate": "11.16.0",
+    "prettier": "3.9.8",
+    "stylelint": "17.15.0",
+    "stylelint-config-standard": "40.0.0",
+    "vitest": "5.0.1"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "fsevents": false
+  }
+}

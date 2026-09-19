@@ -1,0 +1,17 @@
+.DS_Store
+
+# Node
+node_modules/
+playwright-report/
+test-results/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Vale packages downloaded by `vale sync`
+styles/ai-tells/
+styles/config/

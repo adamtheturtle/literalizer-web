@@ -1,0 +1,55 @@
+---
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: 0 1 * * *
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-pr-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+      - name: Install Python tools
+        run: uv sync --frozen --group=dev
+      - name: Run checks
+        run: uv run prek run --all-files --group fast --verbose
+
+  completion-lint:
+    needs: [lint]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check lint status
+        run: |-
+          if ! ${{ needs.lint.result == 'success' }}; then
+            echo "Lint failed"
+            exit 1
+          fi
