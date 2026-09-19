@@ -21,6 +21,20 @@ test('converts data and reports invalid input', async ({ page }) => {
   await expect(page.locator('#source')).toHaveAttribute('aria-invalid', 'true');
 });
 
+test('does not expose internal error details', async ({ page }) => {
+  await waitForConverter(page);
+
+  await page.getByText('Output options').click();
+  await page.locator('#include-delimiters').uncheck();
+  await page.locator('#variable-form').selectOption('NewVariable');
+
+  await expect(page.locator('#input-error-message')).toHaveText(
+    'A collection without its outer brackets cannot be saved as one variable. Include collection delimiters.',
+  );
+  await expect(page.locator('#input-error')).not.toContainText('include_delimiters');
+  await expect(page.getByText('Technical details')).toHaveCount(0);
+});
+
 test('keeps the editors stationary while changing creation mode', async ({ page }) => {
   await page.setViewportSize({ width: 480, height: 900 });
   await waitForConverter(page);

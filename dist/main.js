@@ -358,7 +358,6 @@ function collectDeclarations() {
 
 function clearError() {
   $('#input-error').hidden = true;
-  $('#error-details').open = false;
   document
     .querySelectorAll('[aria-invalid="true"]')
     .forEach((control) => control.removeAttribute('aria-invalid'));
@@ -393,8 +392,6 @@ function showError(error) {
     : '';
   const message = `${error.message || 'Please check your input and try again.'}${location}${path}`;
   $('#input-error-message').textContent = message;
-  $('#error-details').hidden = !error.detail || error.detail === error.message;
-  $('#error-detail-text').textContent = error.detail ?? '';
   $('#input-error').hidden = false;
   if (control) {
     const languageLabel = control.closest('#language-options > label');

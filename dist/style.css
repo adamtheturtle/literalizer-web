@@ -223,17 +223,6 @@ button:disabled {
   white-space: pre-wrap;
 }
 
-.input-error details {
-  margin-top: 8px;
-  font-size: 0.875rem;
-}
-
-.input-error pre {
-  overflow: auto;
-  margin: 5px 0 0;
-  white-space: pre-wrap;
-}
-
 .field-error {
   display: block;
   margin: 5px 0 0;
