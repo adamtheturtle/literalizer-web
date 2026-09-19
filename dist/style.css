@@ -133,9 +133,9 @@ fieldset legend { color: #42515d; font-size: .9rem; font-weight: 600; }
 #modifiers, .declaration-modifiers { display: flex; flex-wrap: wrap; gap: 10px; }
 #modifiers label, .declaration-modifiers label { display: flex; align-items: center; gap: 5px; font-size: .875rem; }
 #language-search { max-width: 320px; margin-bottom: 14px; }
-.footer { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; color: var(--muted); font-size: .875rem; }
-.footer a { color: var(--accent); text-underline-offset: 3px; }
-.footer a:hover { color: var(--accent-hover); }
+.footer { color: var(--muted); font-size: .875rem; }
+#status { margin: 16px 0 0; }
+#status:empty { display: none; }
 
 @media (max-width: 900px) {
   .controls { flex-wrap: wrap; }
@@ -157,7 +157,6 @@ fieldset legend { color: #42515d; font-size: .9rem; font-weight: 600; }
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
-  .footer { flex-direction: column; gap: 2px; }
 }
 @media (max-width: 360px) {
   .controls { grid-template-columns: 1fr; }
