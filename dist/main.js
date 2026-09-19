@@ -15,7 +15,7 @@ const outputView = $('#output-view');
 const convertButton = $('#convert');
 const copyButton = $('#copy-output');
 const status = $('#status');
-const idleStatus = 'Conversion runs in your browser.';
+const idleStatus = '';
 const declarationList = $('#declaration-list');
 let schema;
 let result;
