@@ -8,12 +8,12 @@
       content="Convert JSON, JSONC, JSON5, YAML, and TOML into programming-language literals in your browser."
     />
     <title>Literalizer</title>
-    <link rel="stylesheet" href="./style.css?v=30" />
-    <script type="module" src="./main.js?v=30"></script>
+    <link rel="stylesheet" href="./style.css?v=31" />
+    <script type="module" src="./main.js?v=31"></script>
   </head>
   <body>
     <main class="app">
-      <form id="converter" novalidate>
+      <div id="converter">
         <header class="app-header">
           <h1 class="brand">Literalizer</h1>
           <div class="primary-actions">
@@ -25,7 +25,6 @@
                 <option value="compose">Calls with declarations</option>
               </select>
             </label>
-            <button id="convert" type="submit" disabled>Loading…</button>
           </div>
         </header>
         <div class="mode-guidance is-empty" aria-hidden="true">
@@ -266,7 +265,7 @@
             <div class="option-grid" id="language-options"></div>
           </details>
         </div>
-      </form>
+      </div>
       <div class="footer">
         <p id="status" role="status" aria-live="polite">
           Preparing the converter… First load can take a few seconds.

@@ -154,10 +154,6 @@ button:disabled {
   cursor: default;
 }
 
-#convert {
-  min-width: 112px;
-}
-
 .secondary {
   min-height: 30px;
   padding: 3px 10px;
@@ -720,10 +716,6 @@ fieldset legend {
 
   .primary-actions select {
     width: 100%;
-  }
-
-  #convert {
-    flex: 0 0 auto;
   }
 
   .mode-guidance {

@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   expect: { timeout: 10_000 },
-  fullyParallel: true,
+  fullyParallel: false,
   retries: process.env.CI ? 2 : 0,
   testDir: 'tests/browser',
   timeout: 120_000,

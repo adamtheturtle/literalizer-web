@@ -12,7 +12,6 @@ const outputDisplay = $('#output-display');
 const outputHighlight = $('#output-highlight');
 const sourceHighlight = $('#source-highlight');
 const outputView = $('#output-view');
-const convertButton = $('#convert');
 const copyButton = $('#copy-output');
 const status = $('#status');
 const idleStatus = '';
@@ -21,7 +20,8 @@ let schema;
 let result;
 let nextId = 0;
 let activeId = 0;
-let revealOutputFor = 0;
+let conversionTimer;
+let converterAvailable = false;
 let nextDeclarationId = 0;
 let languageBeforeCall;
 let callLanguageNotice = '';
@@ -421,21 +421,6 @@ function showError(error) {
       inline.textContent = message;
       control.after(inline);
     }
-    control.focus();
-    if (
-      (control === source || control.classList.contains('declaration-source')) &&
-      error.line &&
-      error.column
-    ) {
-      const lines = control.value.split('\n');
-      const before = lines
-        .slice(0, error.line - 1)
-        .reduce((length, line) => length + line.length + 1, 0);
-      const offset = Math.min(control.value.length, before + error.column - 1);
-      control.setSelectionRange(offset, Math.min(offset + 1, control.value.length));
-    }
-  } else {
-    $('#input-error').focus();
   }
   status.textContent = control
     ? 'Check the highlighted field and try again.'
@@ -743,7 +728,7 @@ function renderOutputViews() {
   outputView.hidden = views.length < 2;
 }
 
-function clearResult(message = 'Click Convert to update the output.') {
+function clearResult(message = 'Waiting for input…') {
   result = undefined;
   output.value = '';
   outputHighlight.textContent = '';
@@ -758,24 +743,15 @@ worker.onmessage = ({ data }) => {
     updateLanguageChoices();
     renderLanguage();
     language.disabled = false;
-    convertButton.disabled = false;
-    convertButton.textContent = 'Convert';
+    converterAvailable = true;
     status.textContent = idleStatus;
-    form.requestSubmit();
+    scheduleConversion();
   } else if (data.type === 'result' && data.id === activeId) {
     clearError();
     result = data.result;
     renderOutputViews();
     showResult();
-    if (data.id === revealOutputFor && matchMedia('(max-width: 740px)').matches) {
-      outputDisplay.closest('.pane').scrollIntoView({
-        block: 'start',
-        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-      });
-    }
     status.textContent = idleStatus;
-    convertButton.disabled = false;
-    convertButton.textContent = 'Convert';
   } else if (data.type === 'error' && (!data.id || data.id === activeId)) {
     clearResult('Check the input and try again.');
     showError(
@@ -789,8 +765,7 @@ worker.onmessage = ({ data }) => {
             detail: data.message,
           }),
     );
-    convertButton.disabled = data.id === undefined;
-    convertButton.textContent = data.id === undefined ? 'Unavailable' : 'Convert';
+    if (data.id === undefined) converterAvailable = false;
   }
 };
 worker.onerror = (event) => {
@@ -799,40 +774,48 @@ worker.onerror = (event) => {
     message: 'The converter stopped unexpectedly. Refresh the page and try again.',
     detail: event.message,
   });
-  convertButton.disabled = true;
-  convertButton.textContent = 'Unavailable';
+  converterAvailable = false;
 };
-form.addEventListener('submit', (event) => {
-  event.preventDefault();
+
+function convert(id) {
+  if (operation.value === 'compose') {
+    const declarations = [...declarationList.querySelectorAll('.declaration-source')];
+    if (declarations.length === 0 || declarations.some((control) => !control.value.trim())) {
+      clearError();
+      clearResult(
+        declarations.length === 0
+          ? 'Add a declaration to generate code.'
+          : 'Enter a value for each declaration.',
+      );
+      return;
+    }
+  }
   try {
     clearError();
     const request = collectRequest();
-    activeId = ++nextId;
-    revealOutputFor = event.submitter === convertButton ? activeId : 0;
     clearResult('Converting…');
-    convertButton.disabled = true;
-    convertButton.textContent = 'Converting…';
-    status.textContent = 'Converting…';
-    worker.postMessage({ type: 'convert', id: activeId, request });
+    worker.postMessage({ type: 'convert', id, request });
   } catch (error) {
     clearResult('Check the input and try again.');
     showError(error);
-    convertButton.disabled = false;
-    convertButton.textContent = 'Convert';
   }
-});
+}
+
+function scheduleConversion(delay = 0) {
+  if (!schema || !converterAvailable) return;
+  clearTimeout(conversionTimer);
+  activeId = ++nextId;
+  const id = activeId;
+  conversionTimer = setTimeout(() => convert(id), delay);
+}
+
 function markInputChanged(event) {
   if (event.target === outputView || event.target.id === 'language-option-picker') return;
   if (event.target === source) paintInput();
-  if (!schema || convertButton.textContent === 'Unavailable') return;
+  if (!schema || !converterAvailable) return;
   clearError();
-  if (convertButton.textContent === 'Converting…') {
-    activeId = ++nextId;
-    convertButton.disabled = false;
-    convertButton.textContent = 'Convert';
-  }
-  clearResult();
   status.textContent = idleStatus;
+  scheduleConversion(event.type === 'input' ? 250 : 0);
 }
 form.addEventListener('input', markInputChanged);
 form.addEventListener('change', markInputChanged);
@@ -841,13 +824,7 @@ format.addEventListener('change', setVisibility);
 $('#load-example').addEventListener('click', () => {
   applyExample();
   clearError();
-  clearResult();
-  if (schema) {
-    activeId = ++nextId;
-    convertButton.disabled = false;
-    convertButton.textContent = 'Convert';
-    status.textContent = idleStatus;
-  }
+  scheduleConversion();
   source.focus();
 });
 $('#compose-setup').addEventListener('click', () => {
