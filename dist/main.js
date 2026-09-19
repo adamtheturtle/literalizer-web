@@ -228,9 +228,60 @@ function declarationsChanged() {
   declarationList.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+const variableFormLabels = {
+  '': 'Just the value',
+  NewVariable: 'New variable',
+  ExistingVariable: 'Existing variable',
+  BothVariableForms: 'Declare and assign',
+};
+
+function supportsRedefinition(config) {
+  const control = document.querySelector('#language-options [data-name="declaration_style"]');
+  const style = control?.value ?? config.default_declaration_style;
+  return config.redefinition_styles.includes(style);
+}
+
+function variableFormChoices(config, wrapInFile, isCall = false) {
+  if (!config.supports_variable_names || (isCall && !config.call_returns_expression)) return [''];
+  const choices = [];
+  if (isCall || !wrapInFile || config.supports_no_variable_wrap_in_file) choices.push('');
+  choices.push('NewVariable');
+  if (!wrapInFile) choices.push('ExistingVariable');
+  if (!isCall && wrapInFile && supportsRedefinition(config)) choices.push('BothVariableForms');
+  return choices;
+}
+
+function replaceVariableFormOptions(control, choices) {
+  const previous = control.value;
+  control.replaceChildren(...choices.map((value) => new Option(variableFormLabels[value], value)));
+  control.value = choices.includes(previous) ? previous : choices[0];
+  control.closest('label').hidden = choices.length === 1;
+}
+
+function renderVariableForms() {
+  if (!schema) return;
+  const config = schema.languages[language.value];
+  replaceVariableFormOptions(
+    $('#variable-form'),
+    variableFormChoices(config, $('#wrap-in-file').checked, operation.value !== 'value'),
+  );
+  document.querySelectorAll('.variable-detail').forEach((element) => {
+    element.hidden = !$('#variable-form').value;
+  });
+  $('#modifier-fieldset').hidden =
+    config.modifiers.length === 0 ||
+    !['NewVariable', 'BothVariableForms'].includes($('#variable-form').value);
+}
+
 function renderDeclarationLanguage(row) {
   if (!schema) return;
   const config = schema.languages[language.value];
+  const formControl = row.querySelector('.declaration-form');
+  replaceVariableFormOptions(
+    formControl,
+    variableFormChoices(config, row.querySelector('.declaration-wrap').checked),
+  );
+  row.querySelector('.declaration-name-label').hidden = !formControl.value;
   const refCase = row.querySelector('.declaration-ref-case');
   const selectedCase = refCase.value;
   const selectedModifiers = new Set(
@@ -253,7 +304,7 @@ function renderDeclarationLanguage(row) {
       return label;
     }),
   );
-  const formKind = row.querySelector('.declaration-form').value;
+  const formKind = formControl.value;
   row.querySelector('.declaration-modifier-fieldset').hidden =
     config.modifiers.length === 0 || !['NewVariable', 'BothVariableForms'].includes(formKind);
 }
@@ -266,7 +317,7 @@ function addDeclaration() {
     <div class="declaration-heading"><strong class="declaration-number"></strong><button class="remove-declaration text-button" type="button">Remove</button></div>
     <div class="declaration-fields">
       <label>From <select class="declaration-format" id="declaration-format-${id}"><option>JSON</option><option>JSONC</option><option>JSON5</option><option>YAML</option><option>TOML</option></select></label>
-      <label>Save as <select class="declaration-form" id="declaration-form-${id}"><option value="">Just the value</option><option value="NewVariable" selected>New variable</option><option value="ExistingVariable">Existing variable</option><option value="BothVariableForms">Declare and assign</option></select></label>
+      <label class="declaration-form-label">Save as <select class="declaration-form" id="declaration-form-${id}"><option value="NewVariable" selected>New variable</option></select></label>
       <label class="declaration-name-label">Variable name <input class="declaration-name" id="declaration-name-${id}" value="value"></label>
       <label class="declaration-source-label">Value
         <div class="declaration-code-editor">
@@ -333,6 +384,9 @@ function addDeclaration() {
   declarationSource.addEventListener('input', paintDeclaration);
   declarationSource.addEventListener('scroll', paintDeclaration);
   row.querySelector('.declaration-ref-key').addEventListener('input', updateReferenceVisibility);
+  row.querySelector('.declaration-wrap').addEventListener('change', () => {
+    renderDeclarationLanguage(row);
+  });
   row.querySelector('.declaration-form').addEventListener('change', (event) => {
     row.querySelector('.declaration-name-label').hidden = !event.target.value;
     renderDeclarationLanguage(row);
@@ -543,9 +597,7 @@ function setVisibility() {
   document.querySelectorAll('.value-only').forEach((element) => {
     element.hidden = call;
   });
-  document.querySelectorAll('.variable-detail').forEach((element) => {
-    element.hidden = !$('#variable-form').value;
-  });
+  if (schema) renderVariableForms();
   document.querySelectorAll('.reference-detail').forEach((element) => {
     element.hidden = !$('#ref-key').value.trim();
   });
@@ -633,7 +685,7 @@ function renderLanguage() {
       return label;
     }),
   );
-  $('#modifier-fieldset').hidden = config.modifiers.length === 0 || !$('#variable-form').value;
+  renderVariableForms();
   [...declarationList.children].forEach(renderDeclarationLanguage);
 }
 
@@ -908,6 +960,7 @@ $('#add-declaration').addEventListener('click', () => {
   addDeclaration().querySelector('.declaration-source').focus();
 });
 $('#variable-form').addEventListener('change', setVisibility);
+$('#wrap-in-file').addEventListener('change', renderVariableForms);
 $('#ref-key').addEventListener('input', setVisibility);
 $('#per-element').addEventListener('change', setVisibility);
 language.addEventListener('change', () => {
@@ -924,6 +977,7 @@ $('#language-option-picker').addEventListener('change', (event) => {
     $(`#language-options [data-name="${CSS.escape(event.target.value)}"]`).focus();
   }
 });
+$('#language-options').addEventListener('change', renderVariableForms);
 outputView.addEventListener('change', showResult);
 source.addEventListener('scroll', () => {
   sourceHighlight.parentElement.scrollTop = source.scrollTop;

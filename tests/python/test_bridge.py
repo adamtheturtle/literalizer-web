@@ -37,6 +37,8 @@ def test_schema_covers_the_public_api():
     assert len(schema["call_options"]) == 16
     assert schema["languages"]["Python"]["call_supported"] is True
     assert schema["languages"]["Yaml"]["call_supported"] is False
+    assert schema["languages"]["Jsonc"]["supports_variable_names"] is False
+    assert schema["languages"]["Swift"]["supports_no_variable_wrap_in_file"] is False
 
 
 def test_value_conversion():

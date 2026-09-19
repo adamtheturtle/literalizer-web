@@ -104,3 +104,23 @@ test('shows one language option at a time', async ({ page }) => {
   await page.locator('#language-option-picker').selectOption({ index: 2 });
   await expect(page.locator('#language-options > label:visible')).toHaveCount(1);
 });
+
+test('only offers variable forms supported by the language and file mode', async ({ page }) => {
+  await waitForConverter(page);
+
+  await page.getByText('Output options').click();
+  await page.locator('#variable-form').selectOption('NewVariable');
+  await expect(page.locator('#output')).toHaveValue(/value =/);
+  await page.locator('#language').selectOption('Jsonc');
+  await expect(page.locator('#variable-form-label')).toBeHidden();
+  await expect(page.locator('#variable-form')).toHaveValue('');
+  await expect(page.locator('#output')).not.toHaveValue(/value =/);
+  await expect(page.locator('#input-error-message')).toBeEmpty();
+
+  await page.locator('#language').selectOption('Swift');
+  await page.locator('#wrap-in-file').check();
+  await expect(page.locator('#variable-form-label')).toBeHidden();
+  await expect(page.locator('#variable-form')).toHaveValue('NewVariable');
+  await expect(page.locator('#output')).toHaveValue(/let value =/);
+  await expect(page.locator('#input-error-message')).toBeEmpty();
+});

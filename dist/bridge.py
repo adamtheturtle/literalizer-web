@@ -124,6 +124,15 @@ def get_schema():
             "modifiers": [member.name for member in cls.modifiers],
             "ref_cases": [member.name for member in cls.supported_ref_cases],
             "call_supported": call_supported,
+            "call_returns_expression": instance.call_returns_expression,
+            "supports_variable_names": instance.supports_variable_names,
+            "supports_no_variable_wrap_in_file": instance.supports_no_variable_wrap_in_file,
+            "default_declaration_style": instance.declaration_style.name,
+            "redefinition_styles": [
+                member.name
+                for member in type(instance.declaration_style)
+                if member.value.supports_redefinition
+            ],
         }
     return json.dumps(
         {
