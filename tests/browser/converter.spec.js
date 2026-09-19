@@ -35,6 +35,48 @@ test('does not expose internal error details', async ({ page }) => {
   await expect(page.getByText('Technical details')).toHaveCount(0);
 });
 
+test('edits null replacements without a JSON object', async ({ page }) => {
+  await waitForConverter(page);
+
+  await page.locator('#source').fill('{"status": null}');
+  await page.getByText('Output options').click();
+  const editor = page.locator('#record-null-substitutions-editor');
+  await editor.getByRole('button', { name: 'Add replacement' }).click();
+  await editor.locator('.mapping-key').fill('status');
+  await editor.locator('.mapping-value').fill('ready');
+
+  await expect(page.locator('#output')).toHaveValue(/"status": "ready"/);
+  await expect(page.getByText('Null substitutions (JSON object)')).toHaveCount(0);
+});
+
+test('shows reference controls only when references are enabled', async ({ page }) => {
+  await waitForConverter(page);
+
+  await page.getByText('Output options').click();
+  await expect(page.locator('#ref-values-editor')).toBeHidden();
+  await expect(page.locator('#bound-refs-editor')).toBeHidden();
+
+  await page.locator('#source').fill('{"external":{"$ref":"shared"}}');
+  await page.locator('#ref-key').fill('$ref');
+  const externalValues = page.locator('#ref-values-editor');
+  const declaredValues = page.locator('#bound-refs-editor');
+  await expect(externalValues).toBeVisible();
+  await expect(declaredValues).toBeVisible();
+
+  await externalValues.getByRole('button', { name: 'Add value' }).click();
+  await externalValues.locator('.mapping-key').fill('shared');
+  await externalValues.locator('.mapping-value').fill('{"id": 1}');
+  await expect(page.locator('#output')).toHaveValue(/"external": shared/);
+  await expect(page.locator('#input-error-message')).toBeEmpty();
+
+  await externalValues.getByRole('button', { name: 'Remove' }).click();
+  await declaredValues.getByRole('button', { name: 'Add value' }).click();
+  await declaredValues.locator('.mapping-key').fill('shared');
+  await declaredValues.locator('.mapping-value').fill('{"id": 1}');
+  await expect(page.locator('#output')).toHaveValue(/"external": shared/);
+  await expect(page.locator('#input-error-message')).toBeEmpty();
+});
+
 test('keeps the editors stationary while changing creation mode', async ({ page }) => {
   await page.setViewportSize({ width: 480, height: 900 });
   await waitForConverter(page);

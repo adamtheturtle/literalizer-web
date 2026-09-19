@@ -8,8 +8,8 @@
       content="Convert JSON, JSONC, JSON5, YAML, and TOML into programming-language literals in your browser."
     />
     <title>Literalizer</title>
-    <link rel="stylesheet" href="./style.css?v=33" />
-    <script type="module" src="./main.js?v=33"></script>
+    <link rel="stylesheet" href="./style.css?v=34" />
+    <script type="module" src="./main.js?v=34"></script>
   </head>
   <body>
     <main class="app">
@@ -109,15 +109,24 @@
                   <option value="MULTILINE">Multiline</option>
                 </select></label
               >
-              <label
+              <label class="reference-detail" hidden
                 >Reference case
                 <select id="ref-case">
                   <option value="">No conversion</option>
                 </select></label
               >
               <label
-                >Reference key <input type="text" id="ref-key" placeholder="e.g. $ref"
-              /></label>
+                >Variable reference key
+                <input
+                  type="text"
+                  id="ref-key"
+                  placeholder="e.g. $ref"
+                  aria-describedby="ref-key-help"
+                /><small id="ref-key-help"
+                  >Objects such as {"$ref":"name"} become variable references. Leave blank to treat
+                  them as data.</small
+                >
+              </label>
               <label
                 >Save value as
                 <select id="variable-form">
@@ -134,30 +143,47 @@
                 <legend>Variable modifiers</legend>
                 <div id="modifiers"></div>
               </fieldset>
-              <label
-                >Reference values (JSON object)
-                <textarea
-                  id="ref-values"
-                  class="small-code"
-                  placeholder='{"name":{"id":1}}'
-                ></textarea>
-              </label>
-              <label
-                >Bound references (JSON object)
-                <textarea
-                  id="bound-refs"
-                  class="small-code"
-                  placeholder='{"name":{"id":1}}'
-                ></textarea>
-              </label>
-              <label class="value-only"
-                >Null substitutions (JSON object)
-                <textarea
-                  id="record-null-substitutions"
-                  class="small-code"
-                  placeholder='{"field":"replacement"}'
-                ></textarea>
-              </label>
+              <fieldset
+                class="mapping-editor reference-detail"
+                id="ref-values-editor"
+                data-key-label="Reference name"
+                data-value-label="Example value"
+                hidden
+              >
+                <legend>Values defined elsewhere</legend>
+                <p>
+                  Describe variables that already exist. Their values help choose the right types
+                  and imports; the generated code still refers to them by name.
+                </p>
+                <div class="mapping-rows"></div>
+                <button type="button" class="secondary add-mapping-row">Add value</button>
+              </fieldset>
+              <fieldset
+                class="mapping-editor reference-detail"
+                id="bound-refs-editor"
+                data-key-label="Reference name"
+                data-value-label="Value to declare"
+                hidden
+              >
+                <legend>Values to declare</legend>
+                <p>
+                  Define referenced variables in the generated file. This takes effect when
+                  generating a complete file.
+                </p>
+                <div class="mapping-rows"></div>
+                <button type="button" class="secondary add-mapping-row">Add value</button>
+              </fieldset>
+              <fieldset
+                class="mapping-editor value-only"
+                id="record-null-substitutions-editor"
+                data-key-label="Field name"
+                data-value-label="Replacement"
+              >
+                <legend>Replace null fields</legend>
+                <p>When a named object field is null, use this value before inferring its type.</p>
+                <div class="mapping-rows"></div>
+                <button type="button" class="secondary add-mapping-row">Add replacement</button>
+              </fieldset>
             </div>
           </details>
           <details id="call-panel" hidden>
