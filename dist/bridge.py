@@ -7,7 +7,6 @@ import json
 import typing
 from collections.abc import Mapping
 
-import literalizer
 import literalizer.languages as languages
 from literalizer import (
     BothVariableForms,
@@ -20,7 +19,6 @@ from literalizer import (
     literalize_call,
     literalize_call_with_declarations,
 )
-from literalizer.languages import ALL_LANGUAGES
 from literalizer.exceptions import (
     CallsNotSupportedByLanguageError,
     CallsNotSupportedByToolError,
@@ -47,6 +45,7 @@ from literalizer.exceptions import (
     WrapInFileWithoutVariableNotSupportedError,
     ZipValuesWithoutCallTransformError,
 )
+from literalizer.languages import ALL_LANGUAGES
 
 
 class InputProblem(Exception):
@@ -107,11 +106,14 @@ def get_schema():
         hints = typing.get_type_hints(cls)
         try:
             literalize_call(
-                source='[["Ada"]]', input_format=InputFormat.JSON,
-                language=instance, target_function="consume", parameter_names=["value"],
+                source='[["Ada"]]',
+                input_format=InputFormat.JSON,
+                language=instance,
+                target_function="consume",
+                parameter_names=["value"],
             )
             call_supported = True
-        except (CallsNotSupportedByLanguageError, CallsNotSupportedByToolError):
+        except CallsNotSupportedByLanguageError, CallsNotSupportedByToolError:
             call_supported = False
         result[cls.__name__] = {
             "fields": [
@@ -123,16 +125,19 @@ def get_schema():
             "ref_cases": [member.name for member in cls.supported_ref_cases],
             "call_supported": call_supported,
         }
-    return json.dumps({
-        "languages": result,
-        "value_options": _option_names(literalize),
-        "call_options": _option_names(literalize_call),
-    })
+    return json.dumps(
+        {
+            "languages": result,
+            "value_options": _option_names(literalize),
+            "call_options": _option_names(literalize_call),
+        }
+    )
 
 
 def _option_names(function):
     return [
-        name for name in inspect.signature(function).parameters
+        name
+        for name in inspect.signature(function).parameters
         if name not in {"source", "input_format", "language"}
     ]
 
@@ -163,7 +168,8 @@ def _language_option(cls, name, value):
         return _python_values(value)
     except (SyntaxError, NameError, TypeError, ValueError) as error:
         raise InputProblem(
-            "Check this Python expression.", f"language:{name}",
+            "Check this Python expression.",
+            f"language:{name}",
             f"{name}: {error}",
         ) from error
 
@@ -200,7 +206,8 @@ def _options(raw, cls):
             options["call_transform"] = eval(options["call_transform"], globals())  # noqa: S307
         except (SyntaxError, NameError, TypeError, ValueError) as error:
             raise InputProblem(
-                "Check the call transform expression.", "call-transform",
+                "Check the call transform expression.",
+                "call-transform",
                 str(error),
             ) from error
     return options
@@ -217,10 +224,12 @@ def _result_data(result):
 def _convert(request):
     """Execute one browser request."""
     cls = getattr(languages, request["language"])
-    language = cls(**{
-        name: _language_option(cls, name, value)
-        for name, value in request.get("language_options", {}).items()
-    })
+    language = cls(
+        **{
+            name: _language_option(cls, name, value)
+            for name, value in request.get("language_options", {}).items()
+        }
+    )
     source = request["source"]
     input_format = InputFormat[request["format"]]
     operation = request["operation"]
@@ -244,17 +253,21 @@ def _convert(request):
             declarations = []
             for item in request.get("declarations", []):
                 try:
-                    declarations.append(literalize(
-                        source=item["source"],
-                        input_format=InputFormat[item["format"]],
-                        language=language,
-                        **_options(item.get("options", {}), cls),
-                    ))
+                    declarations.append(
+                        literalize(
+                            source=item["source"],
+                            input_format=InputFormat[item["format"]],
+                            language=language,
+                            **_options(item.get("options", {}), cls),
+                        )
+                    )
                 except ParseError as error:
                     raise InputProblem(
                         f"Could not read declaration {len(declarations) + 1} as {item['format']}. Check its syntax.",
-                        item.get("ui_field", "declaration-list"), str(error),
-                        error.line, error.column,
+                        item.get("ui_field", "declaration-list"),
+                        str(error),
+                        error.line,
+                        error.column,
                     ) from error
                 except LiteralizerError as error:
                     problem = _literalizer_error(error, request)
@@ -270,7 +283,8 @@ def _convert(request):
                 except (KeyError, ValueError, TypeError) as error:
                     raise InputProblem(
                         f"Declaration {len(declarations) + 1} could not be converted. Check its source and settings.",
-                        item.get("ui_field", "declaration-list"), str(error),
+                        item.get("ui_field", "declaration-list"),
+                        str(error),
                     ) from error
             result = literalize_call_with_declarations(
                 language=language,
@@ -288,15 +302,21 @@ def _literalizer_error(error, request):
     """Translate API errors into form guidance, retaining detail on demand."""
     language = request.get("language_label", request.get("language", "This language"))
     field = "source" if error.path is not None else None
-    message = (f"{language} cannot convert this input with the current settings. "
-               "Try changing the input, settings, or language.")
+    message = (
+        f"{language} cannot convert this input with the current settings. "
+        "Try changing the input, settings, or language."
+    )
     if isinstance(error, WrapInFileWithoutVariableNotSupportedError):
-        message = (f"{language} needs a named variable in a complete file. "
-                   "Choose New variable under Settings, or turn off Generate complete file.")
+        message = (
+            f"{language} needs a named variable in a complete file. "
+            "Choose New variable under Settings, or turn off Generate complete file."
+        )
         field = "variable-form"
     elif isinstance(error, ExistingVariableNotSelfContainedError):
-        message = ("A complete file cannot use an existing variable without declaring it. "
-                   "Choose New variable, or turn off Generate complete file.")
+        message = (
+            "A complete file cannot use an existing variable without declaring it. "
+            "Choose New variable, or turn off Generate complete file."
+        )
         field = "variable-form"
     elif isinstance(error, VariableNameNotSupportedError):
         message = f"{language} cannot save this value as a variable. Choose Just the value instead."
@@ -308,7 +328,9 @@ def _literalizer_error(error, request):
         message = "A collection without its outer brackets cannot be saved as one variable. Include collection delimiters."
         field = "include-delimiters"
     elif isinstance(error, DelimiterlessWrappedFileError):
-        message = "A complete file needs the collection's outer brackets. Include collection delimiters."
+        message = (
+            "A complete file needs the collection's outer brackets. Include collection delimiters."
+        )
         field = "include-delimiters"
     elif isinstance(error, PreIndentedWrappedFileError):
         message = "A complete file cannot be pre-indented. Set Indent levels to zero."
@@ -324,24 +346,33 @@ def _literalizer_error(error, request):
         field = "parameter-names"
     elif isinstance(error, ParameterCountMismatchError):
         word = "value" if error.expected == 1 else "values"
-        message = (f"Each call needs {error.expected} {word}, but one row has "
-                   f"{error.got}. Update the input rows or Parameter names.")
+        message = (
+            f"Each call needs {error.expected} {word}, but one row has "
+            f"{error.got}. Update the input rows or Parameter names."
+        )
         field = "source"
     elif isinstance(error, PerElementNotListError):
-        message = ("Enter an array of call rows, such as [[\"Ada\"], [\"Grace\"]], "
-                   "or turn off One call per top-level element in Settings.")
+        message = (
+            'Enter an array of call rows, such as [["Ada"], ["Grace"]], '
+            "or turn off One call per top-level element in Settings."
+        )
         field = "source"
     elif isinstance(error, InputRootKeyNotFoundError):
-        message = (f"There is no {error.input_root_key!r} key in the input. "
-                   "Change Rows key or add that key to the data.")
+        message = (
+            f"There is no {error.input_root_key!r} key in the input. "
+            "Change Rows key or add that key to the data."
+        )
         field = "input-root-key"
     elif isinstance(error, InputRootNotMappingError):
-        message = ("Rows key needs an object at the top of the input. "
-                   "Use an object, or clear Rows key.")
+        message = (
+            "Rows key needs an object at the top of the input. Use an object, or clear Rows key."
+        )
         field = "input-root-key"
     elif isinstance(error, (CallsNotSupportedByLanguageError, CallsNotSupportedByToolError)):
-        message = (f"{language} cannot produce function calls here. "
-                   "Choose another language or create a value instead.")
+        message = (
+            f"{language} cannot produce function calls here. "
+            "Choose another language or create a value instead."
+        )
         field = "language"
     elif isinstance(error, InvalidPreIndentLevelError):
         message = "Indent levels must be zero or greater."
@@ -350,8 +381,10 @@ def _literalizer_error(error, request):
         message = "Paired input needs a call transform to use its values."
         field = "call-transform"
     elif isinstance(error, HeterogeneousCollectionError):
-        message = (f"{language} cannot hold this mix of values in one collection. "
-                   "Change the input or choose another language.")
+        message = (
+            f"{language} cannot hold this mix of values in one collection. "
+            "Change the input or choose another language."
+        )
         field = "source"
     elif isinstance(error, UnsupportedOptionError):
         message = f"{language} does not support this setting. Choose another setting or language."
@@ -371,24 +404,41 @@ def convert(request_json):
         result = _convert(request)
         return json.dumps({"ok": True, "result": result})
     except ParseError as error:
-        return json.dumps({"ok": False, "error": {
-            "message": f"Could not read the {request['format']} input. Check its syntax.",
-            "field": "source",
-            "line": error.line,
-            "column": error.column,
-            "detail": str(error),
-        }})
+        return json.dumps(
+            {
+                "ok": False,
+                "error": {
+                    "message": f"Could not read the {request['format']} input. Check its syntax.",
+                    "field": "source",
+                    "line": error.line,
+                    "column": error.column,
+                    "detail": str(error),
+                },
+            }
+        )
     except InputProblem as error:
-        return json.dumps({"ok": False, "error": {
-            "message": str(error), "field": error.field,
-            "detail": error.detail,
-            "line": error.line, "column": error.column,
-            "path": error.path,
-        }})
+        return json.dumps(
+            {
+                "ok": False,
+                "error": {
+                    "message": str(error),
+                    "field": error.field,
+                    "detail": error.detail,
+                    "line": error.line,
+                    "column": error.column,
+                    "path": error.path,
+                },
+            }
+        )
     except LiteralizerError as error:
         return json.dumps({"ok": False, "error": _literalizer_error(error, request)})
     except (KeyError, TypeError, ValueError, SyntaxError, NameError) as error:
-        return json.dumps({"ok": False, "error": {
-            "message": "Check the input and settings, then try again.",
-            "detail": str(error) or type(error).__name__,
-        }})
+        return json.dumps(
+            {
+                "ok": False,
+                "error": {
+                    "message": "Check the input and settings, then try again.",
+                    "detail": str(error) or type(error).__name__,
+                },
+            }
+        )

@@ -1,0 +1,4 @@
+dist/highlighter.js
+dist/*.whl
+node_modules/
+uv.lock

@@ -1,0 +1,58 @@
+# Configuration for prek, a fast pre-commit-compatible hook runner.
+#:schema https://www.schemastore.org/prek.json
+
+fail_fast = true
+default_install_hook_types = ["pre-commit", "pre-push"]
+
+[[repos]]
+repo = "meta"
+hooks = [
+  { id = "check-useless-excludes", priority = 10, stages = ["pre-commit"], groups = ["fast"] },
+]
+
+[[repos]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v6.0.0"
+hooks = [
+  { id = "check-added-large-files", exclude = '^dist/(highlighter\.js|.*\.whl)$', priority = 30, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "check-case-conflict", priority = 40, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "check-executables-have-shebangs", priority = 60, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "check-merge-conflict", priority = 20, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "check-shebang-scripts-are-executable", priority = 70, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "check-symlinks", priority = 50, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "check-json", priority = 90, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "check-toml", priority = 91, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "check-vcs-permalinks", priority = 80, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "check-yaml", priority = 92, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "end-of-file-fixer", exclude = '^dist/highlighter\.js$', priority = 100, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "trailing-whitespace", exclude = '^dist/highlighter\.js$', priority = 120, stages = ["pre-commit"], groups = ["fast"] },
+]
+
+[[repos]]
+repo = "https://github.com/pre-commit/pygrep-hooks"
+rev = "v1.10.0"
+hooks = [
+  { id = "text-unicode-replacement-char", priority = 130, stages = ["pre-commit"], groups = ["fast"] },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "prettier", name = "Prettier", entry = "npm exec -- prettier --write", language = "system", types_or = ["css", "html", "javascript", "json", "markdown"], exclude = '^(dist/highlighter\.js|package-lock\.json)$', priority = 150, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "eslint", name = "ESLint", entry = "npm exec -- eslint --fix", language = "system", types = ["javascript"], exclude = '^dist/highlighter\.js$', priority = 160, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "stylelint", name = "Stylelint", entry = "npm exec -- stylelint --fix", language = "system", files = '\.css$', priority = 170, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "html-validate", name = "HTML validate", entry = "npm exec -- html-validate", language = "system", files = '\.html$', priority = 180, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "ruff-check", name = "Ruff check", entry = "uv run --group=dev ruff check --fix", language = "system", types = ["python"], priority = 190, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "ruff-format", name = "Ruff format", entry = "uv run --group=dev ruff format", language = "system", types = ["python"], priority = 200, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "pyproject-fmt", name = "pyproject-fmt", entry = "uv run --group=dev pyproject-fmt", language = "system", files = '^pyproject\.toml$', priority = 205, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "yamlfix", name = "yamlfix", entry = "uv run --group=dev yamlfix", language = "system", types = ["yaml"], priority = 210, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "actionlint", name = "actionlint", entry = "uv run --group=dev actionlint", language = "system", pass_filenames = false, files = '^\.github/workflows/.*\.ya?ml$', priority = 220, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "zizmor", name = "zizmor", entry = "uv run --group=dev zizmor --strict-collection .github", language = "system", pass_filenames = false, files = '^\.github/.*\.ya?ml$', priority = 230, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "snapper", name = "snapper", entry = "uv run --group=dev snapper --native --max-width 0 --in-place", language = "system", types = ["markdown"], require_serial = true, priority = 240, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "vale-sync", name = "Vale sync", entry = "uv run --group=dev vale sync", language = "system", pass_filenames = false, files = '(^\.vale\.ini$|\.md$)', priority = 250, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "vale", name = "Vale", entry = "uv run --group=dev vale", language = "system", types = ["markdown"], require_serial = true, priority = 260, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "uv-lock", name = "uv lock", entry = "uv lock --check", language = "system", pass_filenames = false, files = '^(pyproject\.toml|uv\.lock)$', priority = 270, stages = ["pre-commit"], groups = ["fast"] },
+  { id = "generated-highlighter", name = "Generated highlighter", entry = "npm run check:generated", language = "system", pass_filenames = false, files = '^(src/highlighter\.js|dist/highlighter\.js|package(-lock)?\.json)$', stages = ["pre-push"], groups = ["test"] },
+  { id = "javascript-tests", name = "JavaScript tests", entry = "npm test", language = "system", pass_filenames = false, files = '\.(js|json)$', stages = ["pre-push"], groups = ["test"] },
+  { id = "python-tests", name = "Python tests", entry = "uv run --group=dev pytest", language = "system", pass_filenames = false, files = '\.(py|toml|whl)$', stages = ["pre-push"], groups = ["test"] },
+]

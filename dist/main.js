@@ -1,7 +1,7 @@
 import { highlightCode } from './highlighter.js?v=15';
 
 const worker = new Worker(new URL('./worker.js?v=15', import.meta.url), { type: 'module' });
-const $ = selector => document.querySelector(selector);
+const $ = (selector) => document.querySelector(selector);
 const form = $('#converter');
 const operation = $('#operation');
 const format = $('#format');
@@ -28,7 +28,8 @@ let callLanguageNotice = '';
 const examples = {
   value: {
     JSON: '{\n  "authors": ["Ada", "Grace"],\n  "reviewers": ["Linus", "Margaret"]\n}',
-    JSONC: '{\n  // People on the project\n  "authors": ["Ada", "Grace"],\n  "reviewers": ["Linus", "Margaret"]\n}',
+    JSONC:
+      '{\n  // People on the project\n  "authors": ["Ada", "Grace"],\n  "reviewers": ["Linus", "Margaret"]\n}',
     JSON5: "{\n  authors: ['Ada', 'Grace'],\n  reviewers: ['Linus', 'Margaret']\n}",
     YAML: 'authors:\n  - Ada\n  - Grace\nreviewers:\n  - Linus\n  - Margaret',
     TOML: 'authors = ["Ada", "Grace"]\nreviewers = ["Linus", "Margaret"]',
@@ -68,23 +69,59 @@ function paintInput() {
 }
 
 function updateExampleIfPristine() {
-  if (source.value === lastExample && $('#input-root-key').value === lastExampleRootKey) applyExample();
+  if (source.value === lastExample && $('#input-root-key').value === lastExampleRootKey)
+    applyExample();
 }
 
-const acronyms = new Set(['API', 'ASCII', 'CSS', 'HTML', 'HTTP', 'ID', 'IEEE', 'JDK', 'JS', 'JSON', 'JSONC', 'OTP', 'PP', 'SQL', 'TOML', 'URI', 'URL', 'UTF8', 'UTF16', 'XML', 'YAML']);
+const acronyms = new Set([
+  'API',
+  'ASCII',
+  'CSS',
+  'HTML',
+  'HTTP',
+  'ID',
+  'IEEE',
+  'JDK',
+  'JS',
+  'JSON',
+  'JSONC',
+  'OTP',
+  'PP',
+  'SQL',
+  'TOML',
+  'URI',
+  'URL',
+  'UTF8',
+  'UTF16',
+  'XML',
+  'YAML',
+]);
 const languageNames = {
-  Cpp: 'C++', CSharp: 'C#', FSharp: 'F#', Hcl: 'HCL', Json5: 'JSON5', Jsonc: 'JSONC',
-  Matlab: 'MATLAB', ObjectiveC: 'Objective-C', Php: 'PHP', Sml: 'SML',
-  Toml: 'TOML', VisualBasic: 'Visual Basic', Yaml: 'YAML',
+  Cpp: 'C++',
+  CSharp: 'C#',
+  FSharp: 'F#',
+  Hcl: 'HCL',
+  Json5: 'JSON5',
+  Jsonc: 'JSONC',
+  Matlab: 'MATLAB',
+  ObjectiveC: 'Objective-C',
+  Php: 'PHP',
+  Sml: 'SML',
+  Toml: 'TOML',
+  VisualBasic: 'Visual Basic',
+  Yaml: 'YAML',
 };
-const displayLanguage = name => languageNames[name] ?? name;
+const displayLanguage = (name) => languageNames[name] ?? name;
 function displayName(identifier) {
   if (/^V\d+(?:_\d+)+$/.test(identifier)) return `v${identifier.slice(1).replaceAll('_', '.')}`;
   if (/^PY\d\d$/.test(identifier)) return `Python ${identifier[2]}.${identifier[3]}`;
-  return identifier.split('_').map(part => {
-    if (acronyms.has(part.toUpperCase())) return part.toUpperCase();
-    return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
-  }).join(' ');
+  return identifier
+    .split('_')
+    .map((part) => {
+      if (acronyms.has(part.toUpperCase())) return part.toUpperCase();
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    })
+    .join(' ');
 }
 
 class InputError extends Error {
@@ -101,12 +138,24 @@ function parseJSON(selector, label, emptyValue, shape) {
   const value = $(selector).value.trim();
   if (!value) return emptyValue;
   let parsed;
-  try { parsed = JSON.parse(value); }
-  catch (error) { throw new InputError(`${label} needs valid JSON. Check its syntax.`, selector, undefined, undefined, error.message); }
+  try {
+    parsed = JSON.parse(value);
+  } catch (error) {
+    throw new InputError(
+      `${label} needs valid JSON. Check its syntax.`,
+      selector,
+      undefined,
+      undefined,
+      error.message,
+    );
+  }
   if (shape === 'array' && !Array.isArray(parsed)) {
     throw new InputError(`${label} must be a JSON array.`, selector);
   }
-  if (shape === 'object' && (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object')) {
+  if (
+    shape === 'object' &&
+    (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object')
+  ) {
     throw new InputError(`${label} must be a JSON object.`, selector);
   }
   return parsed;
@@ -130,22 +179,25 @@ function renderDeclarationLanguage(row) {
   const refCase = row.querySelector('.declaration-ref-case');
   const selectedCase = refCase.value;
   const selectedModifiers = new Set(
-    [...row.querySelectorAll('.declaration-modifiers input:checked')].map(input => input.value),
+    [...row.querySelectorAll('.declaration-modifiers input:checked')].map((input) => input.value),
   );
   refCase.replaceChildren(
     new Option('No conversion', ''),
-    ...config.ref_cases.map(name => new Option(displayName(name), name)),
+    ...config.ref_cases.map((name) => new Option(displayName(name), name)),
   );
-  if ([...refCase.options].some(option => option.value === selectedCase)) refCase.value = selectedCase;
-  row.querySelector('.declaration-modifiers').replaceChildren(...config.modifiers.map(name => {
-    const label = document.createElement('label');
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.value = name;
-    input.checked = selectedModifiers.has(name);
-    label.append(input, displayName(name));
-    return label;
-  }));
+  if ([...refCase.options].some((option) => option.value === selectedCase))
+    refCase.value = selectedCase;
+  row.querySelector('.declaration-modifiers').replaceChildren(
+    ...config.modifiers.map((name) => {
+      const label = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = name;
+      input.checked = selectedModifiers.has(name);
+      label.append(input, displayName(name));
+      return label;
+    }),
+  );
   const formKind = row.querySelector('.declaration-form').value;
   row.querySelector('.declaration-modifier-fieldset').hidden =
     config.modifiers.length === 0 || !['NewVariable', 'BothVariableForms'].includes(formKind);
@@ -187,15 +239,19 @@ function addDeclaration() {
   const declarationSource = row.querySelector('.declaration-source');
   const declarationHighlight = row.querySelector('.declaration-highlight');
   const paintDeclaration = () => {
-    declarationHighlight.innerHTML = highlightCode(
-      declarationSource.value, row.querySelector('.declaration-format').value, true,
-    ) + '\n';
+    declarationHighlight.innerHTML =
+      highlightCode(declarationSource.value, row.querySelector('.declaration-format').value, true) +
+      '\n';
     declarationHighlight.parentElement.scrollTop = declarationSource.scrollTop;
     declarationHighlight.parentElement.scrollLeft = declarationSource.scrollLeft;
   };
   const updatePlaceholder = () => {
     row.querySelector('.declaration-source').placeholder = {
-      JSON: '{"id": 1}', JSONC: '{// Comment\n"id": 1}', JSON5: '{id: 1}', YAML: 'id: 1', TOML: 'id = 1',
+      JSON: '{"id": 1}',
+      JSONC: '{// Comment\n"id": 1}',
+      JSON5: '{id: 1}',
+      YAML: 'id: 1',
+      TOML: 'id = 1',
     }[row.querySelector('.declaration-format').value];
   };
   row.querySelector('.declaration-format').addEventListener('change', () => {
@@ -206,7 +262,7 @@ function addDeclaration() {
   paintDeclaration();
   declarationSource.addEventListener('input', paintDeclaration);
   declarationSource.addEventListener('scroll', paintDeclaration);
-  row.querySelector('.declaration-form').addEventListener('change', event => {
+  row.querySelector('.declaration-form').addEventListener('change', (event) => {
     row.querySelector('.declaration-name-label').hidden = !event.target.value;
     renderDeclarationLanguage(row);
   });
@@ -225,7 +281,8 @@ function addDeclaration() {
 
 function collectDeclarations() {
   const rows = [...declarationList.children];
-  if (!rows.length) throw new InputError('Add a declaration, or choose Function calls.', '#add-declaration');
+  if (!rows.length)
+    throw new InputError('Add a declaration, or choose Function calls.', '#add-declaration');
   return rows.map((row, index) => {
     const sourceControl = row.querySelector('.declaration-source');
     const formControl = row.querySelector('.declaration-form');
@@ -234,12 +291,18 @@ function collectDeclarations() {
       throw new InputError(`Enter a value for declaration ${index + 1}.`, `#${sourceControl.id}`);
     }
     if (formControl.value && !nameControl.value.trim()) {
-      throw new InputError(`Enter a variable name for declaration ${index + 1}.`, `#${nameControl.id}`);
+      throw new InputError(
+        `Enter a variable name for declaration ${index + 1}.`,
+        `#${nameControl.id}`,
+      );
     }
     const indentControl = row.querySelector('.declaration-indent');
     const indent = Number(indentControl.value);
     if (!indentControl.value.trim() || !Number.isInteger(indent) || indent < 0) {
-      throw new InputError('Indent levels must be a whole number of zero or more.', `#${indentControl.id}`);
+      throw new InputError(
+        'Indent levels must be a whole number of zero or more.',
+        `#${indentControl.id}`,
+      );
     }
     const options = {
       wrap_in_file: row.querySelector('.declaration-wrap').checked,
@@ -257,7 +320,12 @@ function collectDeclarations() {
       ['.declaration-null-substitutions', 'record_null_substitutions', 'Null substitutions'],
     ]) {
       const control = row.querySelector(selector);
-      const value = parseJSON(`#${control.id}`, `Declaration ${index + 1} ${label}`, undefined, 'object');
+      const value = parseJSON(
+        `#${control.id}`,
+        `Declaration ${index + 1} ${label}`,
+        undefined,
+        'object',
+      );
       if (value !== undefined) options[name] = value;
     }
     if (formControl.value) {
@@ -265,7 +333,9 @@ function collectDeclarations() {
         kind: formControl.value,
         name: nameControl.value.trim(),
         modifiers: ['NewVariable', 'BothVariableForms'].includes(formControl.value)
-          ? [...row.querySelectorAll('.declaration-modifiers input:checked')].map(input => input.value)
+          ? [...row.querySelectorAll('.declaration-modifiers input:checked')].map(
+              (input) => input.value,
+            )
           : [],
       };
     }
@@ -289,16 +359,23 @@ function collectDeclarations() {
 function clearError() {
   $('#input-error').hidden = true;
   $('#error-details').open = false;
-  document.querySelectorAll('[aria-invalid="true"]').forEach(control => control.removeAttribute('aria-invalid'));
-  document.querySelectorAll('[aria-describedby="field-error"], [aria-describedby="input-error-message"]').forEach(control => control.removeAttribute('aria-describedby'));
-  document.querySelectorAll('.field-error').forEach(element => element.remove());
+  document
+    .querySelectorAll('[aria-invalid="true"]')
+    .forEach((control) => control.removeAttribute('aria-invalid'));
+  document
+    .querySelectorAll('[aria-describedby="field-error"], [aria-describedby="input-error-message"]')
+    .forEach((control) => control.removeAttribute('aria-describedby'));
+  document.querySelectorAll('.field-error').forEach((element) => element.remove());
 }
 
 function errorControl(field) {
   if (!field) return null;
   if (field.startsWith('language:')) {
-    return [...document.querySelectorAll('#language-options [data-name]')]
-      .find(control => control.dataset.name === field.slice(9)) ?? null;
+    return (
+      [...document.querySelectorAll('#language-options [data-name]')].find(
+        (control) => control.dataset.name === field.slice(9),
+      ) ?? null
+    );
   }
   return document.getElementById(field.replace(/^#/, ''));
 }
@@ -307,9 +384,12 @@ function showError(error) {
   clearError();
   const control = errorControl(error.field);
   const hasLocation = /line\s+\d+.*column\s+\d+/i.test(error.message ?? '');
-  const location = error.line && !hasLocation ? ` (line ${error.line}${error.column ? `, column ${error.column}` : ''})` : '';
+  const location =
+    error.line && !hasLocation
+      ? ` (line ${error.line}${error.column ? `, column ${error.column}` : ''})`
+      : '';
   const path = error.path?.length
-    ? ` In ${error.path.map(part => typeof part === 'number' ? `item ${part + 1}` : `“${part}”`).join(' → ')}.`
+    ? ` In ${error.path.map((part) => (typeof part === 'number' ? `item ${part + 1}` : `“${part}”`)).join(' → ')}.`
     : '';
   const message = `${error.message || 'Please check your input and try again.'}${location}${path}`;
   $('#input-error-message').textContent = message;
@@ -321,14 +401,19 @@ function showError(error) {
       $('#language-search').value = '';
       filterLanguageFields();
     }
-    for (let panel = control.closest('details'); panel; panel = panel.parentElement.closest('details')) {
+    for (
+      let panel = control.closest('details');
+      panel;
+      panel = panel.parentElement.closest('details')
+    ) {
       panel.open = true;
     }
     control.setAttribute('aria-invalid', 'true');
     if (control === source) {
       control.setAttribute('aria-describedby', 'input-error-message');
     } else {
-      if (control.parentElement.tagName !== 'LABEL') control.setAttribute('aria-describedby', 'field-error');
+      if (control.parentElement.tagName !== 'LABEL')
+        control.setAttribute('aria-describedby', 'field-error');
       const inline = document.createElement('span');
       inline.id = 'field-error';
       inline.className = 'field-error';
@@ -336,16 +421,24 @@ function showError(error) {
       control.after(inline);
     }
     control.focus();
-    if ((control === source || control.classList.contains('declaration-source')) && error.line && error.column) {
+    if (
+      (control === source || control.classList.contains('declaration-source')) &&
+      error.line &&
+      error.column
+    ) {
       const lines = control.value.split('\n');
-      const before = lines.slice(0, error.line - 1).reduce((length, line) => length + line.length + 1, 0);
+      const before = lines
+        .slice(0, error.line - 1)
+        .reduce((length, line) => length + line.length + 1, 0);
       const offset = Math.min(control.value.length, before + error.column - 1);
       control.setSelectionRange(offset, Math.min(offset + 1, control.value.length));
     }
   } else {
     $('#input-error').focus();
   }
-  status.textContent = control ? 'Check the highlighted field and try again.' : 'Review the error and try again.';
+  status.textContent = control
+    ? 'Check the highlighted field and try again.'
+    : 'Review the error and try again.';
 }
 
 function optionalText(selector) {
@@ -363,9 +456,11 @@ function updateLanguageChoices() {
   if (call && schema.languages[previous]?.call_supported === false) {
     languageBeforeCall = previous;
   }
-  const names = Object.keys(schema.languages).filter(name => !call || schema.languages[name].call_supported);
-  const preferred = call ? previous : languageBeforeCall ?? previous;
-  language.replaceChildren(...names.map(name => new Option(displayLanguage(name), name)));
+  const names = Object.keys(schema.languages).filter(
+    (name) => !call || schema.languages[name].call_supported,
+  );
+  const preferred = call ? previous : (languageBeforeCall ?? previous);
+  language.replaceChildren(...names.map((name) => new Option(displayLanguage(name), name)));
   language.value = names.includes(preferred) ? preferred : 'Python';
   if (!call) {
     languageBeforeCall = undefined;
@@ -373,7 +468,8 @@ function updateLanguageChoices() {
   }
   if (language.value !== previous && previous) {
     renderLanguage();
-    if (call) callLanguageNotice = `${displayLanguage(previous)} cannot create function calls, so Python is selected. `;
+    if (call)
+      callLanguageNotice = `${displayLanguage(previous)} cannot create function calls, so Python is selected. `;
   }
 }
 
@@ -385,9 +481,13 @@ function setVisibility() {
   $('.language-control').classList.toggle('full-row', !call);
   $('#call-panel').hidden = !call;
   $('#compose-panel').hidden = operation.value !== 'compose';
-  document.querySelectorAll('.call-only').forEach(element => { element.hidden = !call; });
-  document.querySelectorAll('.value-only').forEach(element => { element.hidden = call; });
-  document.querySelectorAll('.variable-detail').forEach(element => {
+  document.querySelectorAll('.call-only').forEach((element) => {
+    element.hidden = !call;
+  });
+  document.querySelectorAll('.value-only').forEach((element) => {
+    element.hidden = call;
+  });
+  document.querySelectorAll('.variable-detail').forEach((element) => {
     element.hidden = !$('#variable-form').value;
   });
   if (schema && schema.languages[language.value]?.modifiers.length === 0) {
@@ -397,9 +497,11 @@ function setVisibility() {
   $('.mode-guidance').setAttribute('aria-hidden', String(!call));
   $('#mode-help').hidden = operation.value === 'compose' && !callLanguageNotice;
   $('#compose-setup').hidden = operation.value !== 'compose';
-  $('#mode-help').textContent = callLanguageNotice + ($('#per-element').checked
-    ? 'Each input row becomes a function call.'
-    : 'The input becomes one function call.');
+  $('#mode-help').textContent =
+    callLanguageNotice +
+    ($('#per-element').checked
+      ? 'Each input row becomes a function call.'
+      : 'The input becomes one function call.');
 }
 
 function languageField(field) {
@@ -410,7 +512,7 @@ function languageField(field) {
   if (field.kind === 'enum') {
     control = document.createElement('select');
     if (field.nullable) control.add(new Option('None', '__none__'));
-    field.choices.forEach(choice => control.add(new Option(displayName(choice), choice)));
+    field.choices.forEach((choice) => control.add(new Option(displayName(choice), choice)));
     control.value = field.default ?? '__none__';
   } else if (field.kind === 'bool') {
     control = document.createElement('input');
@@ -423,8 +525,10 @@ function languageField(field) {
   } else {
     control = document.createElement('textarea');
     control.className = 'small-code';
-    if (field.kind === 'string_set') control.placeholder = `JSON array override (${field.default_count} defaults)`;
-    else if (field.kind === 'mapping_pairs') control.placeholder = 'JSON array of [key, value] pairs';
+    if (field.kind === 'string_set')
+      control.placeholder = `JSON array override (${field.default_count} defaults)`;
+    else if (field.kind === 'mapping_pairs')
+      control.placeholder = 'JSON array of [key, value] pairs';
     else control.placeholder = 'Python expression override';
   }
   control.dataset.default = JSON.stringify(field.default ?? null);
@@ -437,7 +541,7 @@ function languageField(field) {
 function filterLanguageFields() {
   const query = $('#language-search').value.trim().toLowerCase();
   let visible = 0;
-  document.querySelectorAll('#language-options > label').forEach(label => {
+  document.querySelectorAll('#language-options > label').forEach((label) => {
     label.hidden = !label.dataset.field.replaceAll('_', ' ').includes(query);
     if (!label.hidden) visible++;
   });
@@ -446,21 +550,25 @@ function filterLanguageFields() {
 
 function renderLanguage() {
   const config = schema.languages[language.value];
-  $('#language-options').replaceChildren(...config.fields
-    .filter(field => field.kind !== 'enum' || field.choices.length + Number(field.nullable) > 1)
-    .map(languageField));
+  $('#language-options').replaceChildren(
+    ...config.fields
+      .filter((field) => field.kind !== 'enum' || field.choices.length + Number(field.nullable) > 1)
+      .map(languageField),
+  );
   $('#ref-case').replaceChildren(
     new Option('No conversion', ''),
-    ...config.ref_cases.sort().map(name => new Option(displayName(name), name)),
+    ...config.ref_cases.sort().map((name) => new Option(displayName(name), name)),
   );
-  $('#modifiers').replaceChildren(...config.modifiers.map(name => {
-    const label = document.createElement('label');
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.value = name;
-    label.append(input, displayName(name));
-    return label;
-  }));
+  $('#modifiers').replaceChildren(
+    ...config.modifiers.map((name) => {
+      const label = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = name;
+      label.append(input, displayName(name));
+      return label;
+    }),
+  );
   $('#modifier-fieldset').hidden = config.modifiers.length === 0 || !$('#variable-form').value;
   [...declarationList.children].forEach(renderDeclarationLanguage);
   filterLanguageFields();
@@ -478,17 +586,26 @@ function collectLanguageOptions() {
       if (!control.value.trim() || !Number.isInteger(value)) {
         throw new InputError(`${displayName(name)} must be a whole number.`, `language:${name}`);
       }
-    }
-    else if (kind === 'enum') value = control.value === '__none__' ? null : control.value;
+    } else if (kind === 'enum') value = control.value === '__none__' ? null : control.value;
     else if (kind === 'string') value = control.value;
     else if (kind === 'python') {
       if (!control.value.trim()) continue;
       value = { $python: control.value.trim() };
     } else {
       if (!control.value.trim()) continue;
-      try { value = JSON.parse(control.value); }
-      catch (error) { throw new InputError(`${displayName(name)} needs valid JSON. Check its syntax.`, `language:${name}`, undefined, undefined, error.message); }
-      if (!Array.isArray(value)) throw new InputError(`${displayName(name)} must be a JSON array.`, `language:${name}`);
+      try {
+        value = JSON.parse(control.value);
+      } catch (error) {
+        throw new InputError(
+          `${displayName(name)} needs valid JSON. Check its syntax.`,
+          `language:${name}`,
+          undefined,
+          undefined,
+          error.message,
+        );
+      }
+      if (!Array.isArray(value))
+        throw new InputError(`${displayName(name)} must be a JSON array.`, `language:${name}`);
     }
     if (JSON.stringify(value) !== JSON.stringify(defaultValue)) options[name] = value;
   }
@@ -508,35 +625,60 @@ function collectOptions() {
     options.variable_form = {
       kind: $('#variable-form').value,
       name,
-      modifiers: [...document.querySelectorAll('#modifiers input:checked')].map(input => input.value),
+      modifiers: [...document.querySelectorAll('#modifiers input:checked')].map(
+        (input) => input.value,
+      ),
     };
   }
   for (const [selector, name] of [
     ['#ref-values', 'ref_values'],
     ['#bound-refs', 'bound_refs'],
   ]) {
-    const value = parseJSON(selector, selector === '#ref-values' ? 'Reference values' : 'Bound references', undefined, 'object');
+    const value = parseJSON(
+      selector,
+      selector === '#ref-values' ? 'Reference values' : 'Bound references',
+      undefined,
+      'object',
+    );
     if (value !== undefined) options[name] = value;
   }
   if (operation.value === 'value') {
     options.include_delimiters = $('#include-delimiters').checked;
     options.pre_indent_level = Number($('#pre-indent-level').value);
-    if (!$('#pre-indent-level').value.trim() || !Number.isInteger(options.pre_indent_level) || options.pre_indent_level < 0) {
-      throw new InputError('Indent levels must be a whole number of zero or more.', '#pre-indent-level');
+    if (
+      !$('#pre-indent-level').value.trim() ||
+      !Number.isInteger(options.pre_indent_level) ||
+      options.pre_indent_level < 0
+    ) {
+      throw new InputError(
+        'Indent levels must be a whole number of zero or more.',
+        '#pre-indent-level',
+      );
     }
-    const substitutions = parseJSON('#record-null-substitutions', 'Null substitutions', undefined, 'object');
+    const substitutions = parseJSON(
+      '#record-null-substitutions',
+      'Null substitutions',
+      undefined,
+      'object',
+    );
     if (substitutions !== undefined) options.record_null_substitutions = substitutions;
   } else {
     options.target_function = $('#target-function').value;
-    if (!options.target_function.trim()) throw new InputError('Enter a function name.', '#target-function');
+    if (!options.target_function.trim())
+      throw new InputError('Enter a function name.', '#target-function');
     const names = $('#parameter-names').value.trim();
-    options.parameter_names = names ? names.split(',').map(name => name.trim()) : [];
-    if (options.parameter_names.some(name => !name)) {
-      throw new InputError('Separate parameter names with commas, without empty entries.', '#parameter-names');
+    options.parameter_names = names ? names.split(',').map((name) => name.trim()) : [];
+    if (options.parameter_names.some((name) => !name)) {
+      throw new InputError(
+        'Separate parameter names with commas, without empty entries.',
+        '#parameter-names',
+      );
     }
     options.per_element = $('#per-element').checked;
-    if (optionalText('#input-root-key') !== undefined) options.input_root_key = $('#input-root-key').value;
-    if (optionalText('#call-transform') !== undefined) options.call_transform = $('#call-transform').value;
+    if (optionalText('#input-root-key') !== undefined)
+      options.input_root_key = $('#input-root-key').value;
+    if (optionalText('#call-transform') !== undefined)
+      options.call_transform = $('#call-transform').value;
     if (optionalText('#zip-source') !== undefined) {
       options.zip_source = $('#zip-source').value;
       options.zip_input_format = $('#zip-input-format').value || format.value;
@@ -631,20 +773,31 @@ worker.onmessage = ({ data }) => {
     convertButton.textContent = 'Convert';
   } else if (data.type === 'error' && (!data.id || data.id === activeId)) {
     clearResult('Check the input and try again.');
-    showError(data.id === undefined
-      ? { message: 'The converter could not start. Refresh the page and try again.', detail: data.message }
-      : data.error ?? { message: 'Conversion failed. Check the input and try again.', detail: data.message });
+    showError(
+      data.id === undefined
+        ? {
+            message: 'The converter could not start. Refresh the page and try again.',
+            detail: data.message,
+          }
+        : (data.error ?? {
+            message: 'Conversion failed. Check the input and try again.',
+            detail: data.message,
+          }),
+    );
     convertButton.disabled = data.id === undefined;
     convertButton.textContent = data.id === undefined ? 'Unavailable' : 'Convert';
   }
 };
-worker.onerror = event => {
+worker.onerror = (event) => {
   clearResult('Refresh the page to try again.');
-  showError({ message: 'The converter stopped unexpectedly. Refresh the page and try again.', detail: event.message });
+  showError({
+    message: 'The converter stopped unexpectedly. Refresh the page and try again.',
+    detail: event.message,
+  });
   convertButton.disabled = true;
   convertButton.textContent = 'Unavailable';
 };
-form.addEventListener('submit', event => {
+form.addEventListener('submit', (event) => {
   event.preventDefault();
   try {
     clearError();
@@ -720,7 +873,9 @@ copyButton.addEventListener('click', async () => {
   try {
     await navigator.clipboard.writeText(output.value);
     copyButton.textContent = 'Copied';
-    setTimeout(() => { copyButton.textContent = 'Copy'; }, 1500);
+    setTimeout(() => {
+      copyButton.textContent = 'Copy';
+    }, 1500);
   } catch {
     outputDisplay.focus();
     const range = document.createRange();
