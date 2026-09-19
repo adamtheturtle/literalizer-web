@@ -878,6 +878,17 @@ function markInputChanged(event) {
   if (!schema || !converterAvailable) return;
   clearError();
   status.textContent = idleStatus;
+  const mappingRow = event.target.closest('.mapping-row');
+  if (mappingRow) {
+    const hasKey = Boolean(mappingRow.querySelector('.mapping-key').value.trim());
+    const hasValue = Boolean(mappingRow.querySelector('.mapping-value').value.trim());
+    if (hasKey !== hasValue) {
+      clearTimeout(conversionTimer);
+      activeId = ++nextId;
+      clearResult('Enter both fields to continue.');
+      return;
+    }
+  }
   scheduleConversion(event.type === 'input' ? 250 : 0);
 }
 form.addEventListener('input', markInputChanged);

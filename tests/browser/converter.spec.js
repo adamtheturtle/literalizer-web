@@ -65,6 +65,8 @@ test('shows reference controls only when references are enabled', async ({ page 
 
   await externalValues.getByRole('button', { name: 'Add value' }).click();
   await externalValues.locator('.mapping-key').fill('shared');
+  await page.waitForTimeout(300);
+  await expect(page.locator('#input-error-message')).toBeEmpty();
   await externalValues.locator('.mapping-value').fill('{"id": 1}');
   await expect(page.locator('#output')).toHaveValue(/"external": shared/);
   await expect(page.locator('#input-error-message')).toBeEmpty();
