@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Convert JSON, JSONC, JSON5, YAML, and TOML into programming-language literals in your browser.">
+    <title>Literalizer — convert data to code</title>
+    <link rel="stylesheet" href="./style.css?v=25">
+    <script type="module" src="./main.js?v=25"></script>
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1 class="brand">Literalizer</h1>
+      </header>
+      <form id="converter" novalidate>
+        <div class="controls">
+          <label>Create
+            <select id="operation" name="operation">
+              <option value="value">Value</option>
+              <option value="call">Function calls</option>
+              <option value="compose">Calls with declarations</option>
+            </select>
+          </label>
+          <label>From
+            <select id="format" name="format">
+              <option value="JSON">JSON</option>
+              <option value="JSONC">JSONC</option>
+              <option value="JSON5">JSON5</option>
+              <option value="YAML">YAML</option>
+              <option value="TOML">TOML</option>
+            </select>
+          </label>
+          <label class="language-control">To
+            <select id="language" name="language" disabled>
+              <option>Loading languages…</option>
+            </select>
+          </label>
+          <label class="call-only" hidden>Function
+            <input id="target-function" value="consume">
+          </label>
+          <button id="convert" type="submit" disabled>Loading…</button>
+        </div>
+        <div class="mode-guidance" hidden>
+          <p id="mode-help"></p>
+          <button id="compose-setup" type="button" class="text-button" hidden>Set declarations</button>
+        </div>
+        <div id="input-error" class="input-error" role="alert" tabindex="-1" hidden>
+          <strong>Could not convert</strong>
+          <p id="input-error-message"></p>
+          <details id="error-details" hidden><summary>Technical details</summary><pre id="error-detail-text"></pre></details>
+        </div>
+        <div class="panes">
+          <div class="pane">
+            <div class="pane-header"><label for="source">Input</label>
+              <div class="input-actions"><button id="load-example" type="button" class="secondary">Load example</button></div>
+            </div>
+            <div class="code-editor">
+              <pre class="code-highlighting" aria-hidden="true"><code id="source-highlight"></code></pre>
+              <textarea id="source" name="source" spellcheck="false">{
+  "authors": ["Ada", "Grace"],
+  "reviewers": ["Linus", "Margaret"]
+}</textarea>
+            </div>
+          </div>
+          <div class="pane">
+            <div class="pane-header"><span class="pane-title">Output</span>
+              <div class="output-actions">
+                <select id="output-view" aria-label="Output view" hidden></select>
+                <button id="copy-output" type="button" class="secondary" disabled>Copy</button>
+              </div>
+            </div>
+            <pre id="output-display" class="code-output" tabindex="0" aria-label="Generated code"><code id="output-highlight" data-placeholder="Loading converter…"></code></pre>
+            <textarea id="output" name="output" readonly hidden></textarea>
+          </div>
+        </div>
+        <div class="option-panels">
+          <details>
+            <summary>Output formatting</summary>
+            <div class="option-grid">
+              <label class="check"><input type="checkbox" id="wrap-in-file"> Generate complete file</label>
+              <label class="check value-only"><input type="checkbox" id="include-delimiters" checked> Include collection delimiters</label>
+              <label class="value-only">Indent levels <input id="pre-indent-level" type="number" min="0" value="0"></label>
+              <label>Collection layout <select id="collection-layout"><option value="COMPACT">Compact</option><option value="MULTILINE">Multiline</option></select></label>
+              <label>Reference case <select id="ref-case"><option value="">No conversion</option></select></label>
+              <label>Reference key <input id="ref-key" placeholder="e.g. $ref"></label>
+              <label>Save value as <select id="variable-form"><option value="">Just the value</option><option value="NewVariable">New variable</option><option value="ExistingVariable">Existing variable</option><option value="BothVariableForms">Declare and assign</option></select></label>
+              <label class="variable-detail">Variable name <input id="variable-name" value="value"></label>
+              <fieldset class="variable-detail" id="modifier-fieldset"><legend>Variable modifiers</legend><div id="modifiers"></div></fieldset>
+              <label>Reference values (JSON object) <textarea id="ref-values" class="small-code" placeholder='{"name":{"id":1}}'></textarea></label>
+              <label>Bound references (JSON object) <textarea id="bound-refs" class="small-code" placeholder='{"name":{"id":1}}'></textarea></label>
+              <label class="value-only">Null substitutions (JSON object) <textarea id="record-null-substitutions" class="small-code" placeholder='{"field":"replacement"}'></textarea></label>
+            </div>
+          </details>
+          <details id="call-panel" hidden>
+            <summary>Function call options</summary>
+            <div class="option-grid">
+              <label>Parameter names <input id="parameter-names" value="value" placeholder="value, count" aria-describedby="parameter-names-help"><small id="parameter-names-help">Separate names with commas.</small></label>
+              <label>Rows key <input id="input-root-key" placeholder="Optional key containing rows"></label>
+              <label class="check"><input type="checkbox" id="per-element" checked> One call per top-level element</label>
+              <label>Call transform (Python expression) <input id="call-transform" placeholder='lambda ctx: f"print({ctx.call})"'></label>
+              <label>Paired input format <select id="zip-input-format"><option value="">Same as input</option><option>JSON</option><option>JSONC</option><option>JSON5</option><option>YAML</option><option>TOML</option></select></label>
+              <label>Paired input <textarea id="zip-source" class="small-code" placeholder="Optional data paired with each call"></textarea></label>
+              <label>Comment source (JSON array) <textarea id="comment-source" class="small-code" placeholder='["first row", "second row"]'></textarea></label>
+              <label>Consumable refs (JSON array) <input id="consumable-refs" placeholder='["payload"]'></label>
+            </div>
+          </details>
+          <details id="compose-panel" hidden>
+            <summary>Declarations and file headers</summary>
+            <p>Values declared here appear before the function calls.</p>
+            <div id="declaration-list" class="declaration-list"></div>
+            <button id="add-declaration" type="button" class="secondary">Add declaration</button>
+            <div class="option-grid">
+              <label>File header <textarea id="extra-preamble" class="small-code" placeholder="import something"></textarea><small>One line per entry, above the generated code.</small></label>
+              <label>Before function calls <textarea id="extra-body-preamble" class="small-code" placeholder="type Value = ..."></textarea><small>One line per entry, after the file header.</small></label>
+            </div>
+          </details>
+          <details>
+            <summary>Language formatting</summary>
+            <p>Customize how the selected language writes values.</p>
+            <input id="language-search" placeholder="Find a setting" aria-label="Find a language setting">
+            <div class="option-grid" id="language-options"></div>
+            <p id="language-no-results" hidden>No settings match that search.</p>
+          </details>
+        </div>
+      </form>
+      <div class="footer">
+        <p id="status" role="status" aria-live="polite">Preparing the converter… First load can take a few seconds.</p>
+        <a href="https://github.com/adamtheturtle/literalizer">View source on GitHub</a>
+      </div>
+    </main>
+  </body>
+</html>

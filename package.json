@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/highlighter.js --bundle --minify --format=esm --outfile=dist/highlighter.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.9",
+    "highlight.js": "11.12.0"
+  }
+}
