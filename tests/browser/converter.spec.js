@@ -8,6 +8,7 @@ async function waitForConverter(page) {
 test('converts data and reports invalid input', async ({ page }) => {
   await waitForConverter(page);
   await expect(page.getByRole('button', { name: 'Convert' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Load example' })).toHaveCount(0);
 
   await page.locator('#source').fill('{"name": "Ada"}');
   await expect(page.locator('#output')).toHaveValue(/"name": "Ada"/);

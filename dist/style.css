@@ -301,7 +301,6 @@ button:disabled {
   font-size: 0.875rem;
 }
 
-.input-actions,
 .output-actions {
   display: flex;
   align-items: center;

@@ -821,12 +821,6 @@ form.addEventListener('input', markInputChanged);
 form.addEventListener('change', markInputChanged);
 operation.addEventListener('change', setVisibility);
 format.addEventListener('change', setVisibility);
-$('#load-example').addEventListener('click', () => {
-  applyExample();
-  clearError();
-  scheduleConversion();
-  source.focus();
-});
 $('#compose-setup').addEventListener('click', () => {
   $('#compose-panel').open = true;
   const row = declarationList.firstElementChild ?? addDeclaration();
