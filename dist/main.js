@@ -12,7 +12,6 @@ const outputDisplay = $('#output-display');
 const outputHighlight = $('#output-highlight');
 const sourceHighlight = $('#source-highlight');
 const outputView = $('#output-view');
-const convertButton = $('#convert');
 const copyButton = $('#copy-output');
 const status = $('#status');
 const idleStatus = '';
@@ -21,10 +20,12 @@ let schema;
 let result;
 let nextId = 0;
 let activeId = 0;
-let revealOutputFor = 0;
+let conversionTimer;
+let converterAvailable = false;
 let nextDeclarationId = 0;
 let languageBeforeCall;
 let callLanguageNotice = '';
+let nextMappingId = 0;
 const examples = {
   value: {
     JSON: '{\n  "authors": ["Ada", "Grace"],\n  "reviewers": ["Linus", "Margaret"]\n}',
@@ -161,6 +162,60 @@ function parseJSON(selector, label, emptyValue, shape) {
   return parsed;
 }
 
+function addMappingRow(editor) {
+  const id = ++nextMappingId;
+  const row = document.createElement('div');
+  row.className = 'mapping-row';
+  row.innerHTML = `
+    <label>${editor.dataset.keyLabel}<input class="mapping-key" id="mapping-key-${id}" type="text"></label>
+    <label>${editor.dataset.valueLabel}<input class="mapping-value" id="mapping-value-${id}" type="text" placeholder="Text, number, true, or JSON"></label>
+    <button type="button" class="text-button remove-mapping-row">Remove</button>
+    <small>Plain text needs no quotes. Use JSON for arrays and objects.</small>`;
+  editor.querySelector('.mapping-rows').append(row);
+  row.querySelector('.remove-mapping-row').addEventListener('click', () => {
+    row.remove();
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  row.querySelector('.mapping-key').focus();
+}
+
+function parseMappingValue(control, label) {
+  const sourceValue = control.value.trim();
+  if (!sourceValue) throw new InputError(`Enter ${label.toLowerCase()}.`, `#${control.id}`);
+  try {
+    return JSON.parse(sourceValue);
+  } catch (error) {
+    if (/^(?:\{|\[|"|true$|false$|null$|-?\d)/.test(sourceValue)) {
+      throw new InputError(
+        `${label} needs valid JSON, or enter plain text without quotes.`,
+        `#${control.id}`,
+        undefined,
+        undefined,
+        error.message,
+      );
+    }
+    return sourceValue;
+  }
+}
+
+function collectMapping(editorOrSelector) {
+  const editor = typeof editorOrSelector === 'string' ? $(editorOrSelector) : editorOrSelector;
+  const result = {};
+  for (const row of editor.querySelectorAll('.mapping-row')) {
+    const keyControl = row.querySelector('.mapping-key');
+    const valueControl = row.querySelector('.mapping-value');
+    const key = keyControl.value.trim();
+    if (!key && !valueControl.value.trim()) continue;
+    if (!key)
+      throw new InputError(`Enter ${editor.dataset.keyLabel.toLowerCase()}.`, `#${keyControl.id}`);
+    if (Object.hasOwn(result, key)) {
+      throw new InputError(`${key} is listed more than once.`, `#${keyControl.id}`);
+    }
+    result[key] = parseMappingValue(valueControl, editor.dataset.valueLabel);
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+
 function renumberDeclarations() {
   [...declarationList.children].forEach((row, index) => {
     row.querySelector('.declaration-number').textContent = `Declaration ${index + 1}`;
@@ -173,9 +228,60 @@ function declarationsChanged() {
   declarationList.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+const variableFormLabels = {
+  '': 'Just the value',
+  NewVariable: 'New variable',
+  ExistingVariable: 'Existing variable',
+  BothVariableForms: 'Declare and assign',
+};
+
+function supportsRedefinition(config) {
+  const control = document.querySelector('#language-options [data-name="declaration_style"]');
+  const style = control?.value ?? config.default_declaration_style;
+  return config.redefinition_styles.includes(style);
+}
+
+function variableFormChoices(config, wrapInFile, isCall = false) {
+  if (!config.supports_variable_names || (isCall && !config.call_returns_expression)) return [''];
+  const choices = [];
+  if (isCall || !wrapInFile || config.supports_no_variable_wrap_in_file) choices.push('');
+  choices.push('NewVariable');
+  if (!wrapInFile) choices.push('ExistingVariable');
+  if (!isCall && wrapInFile && supportsRedefinition(config)) choices.push('BothVariableForms');
+  return choices;
+}
+
+function replaceVariableFormOptions(control, choices) {
+  const previous = control.value;
+  control.replaceChildren(...choices.map((value) => new Option(variableFormLabels[value], value)));
+  control.value = choices.includes(previous) ? previous : choices[0];
+  control.closest('label').hidden = choices.length === 1;
+}
+
+function renderVariableForms() {
+  if (!schema) return;
+  const config = schema.languages[language.value];
+  replaceVariableFormOptions(
+    $('#variable-form'),
+    variableFormChoices(config, $('#wrap-in-file').checked, operation.value !== 'value'),
+  );
+  document.querySelectorAll('.variable-detail').forEach((element) => {
+    element.hidden = !$('#variable-form').value;
+  });
+  $('#modifier-fieldset').hidden =
+    config.modifiers.length === 0 ||
+    !['NewVariable', 'BothVariableForms'].includes($('#variable-form').value);
+}
+
 function renderDeclarationLanguage(row) {
   if (!schema) return;
   const config = schema.languages[language.value];
+  const formControl = row.querySelector('.declaration-form');
+  replaceVariableFormOptions(
+    formControl,
+    variableFormChoices(config, row.querySelector('.declaration-wrap').checked),
+  );
+  row.querySelector('.declaration-name-label').hidden = !formControl.value;
   const refCase = row.querySelector('.declaration-ref-case');
   const selectedCase = refCase.value;
   const selectedModifiers = new Set(
@@ -198,7 +304,7 @@ function renderDeclarationLanguage(row) {
       return label;
     }),
   );
-  const formKind = row.querySelector('.declaration-form').value;
+  const formKind = formControl.value;
   row.querySelector('.declaration-modifier-fieldset').hidden =
     config.modifiers.length === 0 || !['NewVariable', 'BothVariableForms'].includes(formKind);
 }
@@ -211,7 +317,7 @@ function addDeclaration() {
     <div class="declaration-heading"><strong class="declaration-number"></strong><button class="remove-declaration text-button" type="button">Remove</button></div>
     <div class="declaration-fields">
       <label>From <select class="declaration-format" id="declaration-format-${id}"><option>JSON</option><option>JSONC</option><option>JSON5</option><option>YAML</option><option>TOML</option></select></label>
-      <label>Save as <select class="declaration-form" id="declaration-form-${id}"><option value="">Just the value</option><option value="NewVariable" selected>New variable</option><option value="ExistingVariable">Existing variable</option><option value="BothVariableForms">Declare and assign</option></select></label>
+      <label class="declaration-form-label">Save as <select class="declaration-form" id="declaration-form-${id}"><option value="NewVariable" selected>New variable</option></select></label>
       <label class="declaration-name-label">Variable name <input class="declaration-name" id="declaration-name-${id}" value="value"></label>
       <label class="declaration-source-label">Value
         <div class="declaration-code-editor">
@@ -226,11 +332,20 @@ function addDeclaration() {
         <label class="check"><input class="declaration-delimiters" id="declaration-delimiters-${id}" type="checkbox" checked> Include collection delimiters</label>
         <label>Indent levels <input class="declaration-indent" id="declaration-indent-${id}" type="number" min="0" value="0"></label>
         <label>Collection layout <select class="declaration-layout"><option value="COMPACT">Compact</option><option value="MULTILINE">Multiline</option></select></label>
-        <label>Reference case <select class="declaration-ref-case"></select></label>
-        <label>Reference key <input class="declaration-ref-key" placeholder="e.g. $ref"></label>
-        <label>Reference values (JSON object) <textarea class="declaration-ref-values small-code" id="declaration-ref-values-${id}" placeholder='{"name":{"id":1}}'></textarea></label>
-        <label>Bound references (JSON object) <textarea class="declaration-bound-refs small-code" id="declaration-bound-refs-${id}" placeholder='{"name":{"id":1}}'></textarea></label>
-        <label>Null substitutions (JSON object) <textarea class="declaration-null-substitutions small-code" id="declaration-null-substitutions-${id}" placeholder='{"field":"replacement"}'></textarea></label>
+        <label class="declaration-reference-detail" hidden>Reference case <select class="declaration-ref-case"></select></label>
+        <label>Variable reference key <input class="declaration-ref-key" placeholder="e.g. $ref"><small>Objects such as {"$ref":"name"} become variable references.</small></label>
+        <fieldset class="mapping-editor declaration-ref-values-editor declaration-reference-detail" data-key-label="Reference name" data-value-label="Example value" hidden>
+          <legend>Values defined elsewhere</legend><p>Describe referenced variables so their types and imports can be inferred.</p>
+          <div class="mapping-rows"></div><button type="button" class="secondary add-mapping-row">Add value</button>
+        </fieldset>
+        <fieldset class="mapping-editor declaration-bound-refs-editor declaration-reference-detail" data-key-label="Reference name" data-value-label="Value to declare" hidden>
+          <legend>Values to declare</legend><p>Define referenced variables in the generated complete file.</p>
+          <div class="mapping-rows"></div><button type="button" class="secondary add-mapping-row">Add value</button>
+        </fieldset>
+        <fieldset class="mapping-editor declaration-null-substitutions-editor" data-key-label="Field name" data-value-label="Replacement">
+          <legend>Replace null fields</legend><p>Use a replacement when a named object field is null.</p>
+          <div class="mapping-rows"></div><button type="button" class="secondary add-mapping-row">Add replacement</button>
+        </fieldset>
         <fieldset class="declaration-modifier-fieldset"><legend>Variable modifiers</legend><div class="declaration-modifiers"></div></fieldset>
       </div>
     </details>`;
@@ -254,6 +369,12 @@ function addDeclaration() {
       TOML: 'id = 1',
     }[row.querySelector('.declaration-format').value];
   };
+  const updateReferenceVisibility = () => {
+    const hidden = !row.querySelector('.declaration-ref-key').value.trim();
+    row.querySelectorAll('.declaration-reference-detail').forEach((element) => {
+      element.hidden = hidden;
+    });
+  };
   row.querySelector('.declaration-format').addEventListener('change', () => {
     updatePlaceholder();
     paintDeclaration();
@@ -262,6 +383,10 @@ function addDeclaration() {
   paintDeclaration();
   declarationSource.addEventListener('input', paintDeclaration);
   declarationSource.addEventListener('scroll', paintDeclaration);
+  row.querySelector('.declaration-ref-key').addEventListener('input', updateReferenceVisibility);
+  row.querySelector('.declaration-wrap').addEventListener('change', () => {
+    renderDeclarationLanguage(row);
+  });
   row.querySelector('.declaration-form').addEventListener('change', (event) => {
     row.querySelector('.declaration-name-label').hidden = !event.target.value;
     renderDeclarationLanguage(row);
@@ -274,6 +399,7 @@ function addDeclaration() {
   });
   declarationList.append(row);
   renderDeclarationLanguage(row);
+  updateReferenceVisibility();
   renumberDeclarations();
   declarationsChanged();
   return row;
@@ -310,22 +436,23 @@ function collectDeclarations() {
       pre_indent_level: indent,
       collection_layout: row.querySelector('.declaration-layout').value,
     };
-    const refCase = row.querySelector('.declaration-ref-case').value;
-    if (refCase) options.ref_case = refCase;
     const refKey = row.querySelector('.declaration-ref-key').value;
-    if (refKey) options.ref_key = refKey;
-    for (const [selector, name, label] of [
-      ['.declaration-ref-values', 'ref_values', 'Reference values'],
-      ['.declaration-bound-refs', 'bound_refs', 'Bound references'],
-      ['.declaration-null-substitutions', 'record_null_substitutions', 'Null substitutions'],
+    if (refKey) {
+      options.ref_key = refKey;
+      const refCase = row.querySelector('.declaration-ref-case').value;
+      if (refCase) options.ref_case = refCase;
+      for (const [selector, name] of [
+        ['.declaration-ref-values-editor', 'ref_values'],
+        ['.declaration-bound-refs-editor', 'bound_refs'],
+      ]) {
+        const value = collectMapping(row.querySelector(selector));
+        if (value !== undefined) options[name] = value;
+      }
+    }
+    for (const [selector, name] of [
+      ['.declaration-null-substitutions-editor', 'record_null_substitutions'],
     ]) {
-      const control = row.querySelector(selector);
-      const value = parseJSON(
-        `#${control.id}`,
-        `Declaration ${index + 1} ${label}`,
-        undefined,
-        'object',
-      );
+      const value = collectMapping(row.querySelector(selector));
       if (value !== undefined) options[name] = value;
     }
     if (formControl.value) {
@@ -358,7 +485,6 @@ function collectDeclarations() {
 
 function clearError() {
   $('#input-error').hidden = true;
-  $('#error-details').open = false;
   document
     .querySelectorAll('[aria-invalid="true"]')
     .forEach((control) => control.removeAttribute('aria-invalid'));
@@ -393,8 +519,6 @@ function showError(error) {
     : '';
   const message = `${error.message || 'Please check your input and try again.'}${location}${path}`;
   $('#input-error-message').textContent = message;
-  $('#error-details').hidden = !error.detail || error.detail === error.message;
-  $('#error-detail-text').textContent = error.detail ?? '';
   $('#input-error').hidden = false;
   if (control) {
     const languageLabel = control.closest('#language-options > label');
@@ -421,21 +545,6 @@ function showError(error) {
       inline.textContent = message;
       control.after(inline);
     }
-    control.focus();
-    if (
-      (control === source || control.classList.contains('declaration-source')) &&
-      error.line &&
-      error.column
-    ) {
-      const lines = control.value.split('\n');
-      const before = lines
-        .slice(0, error.line - 1)
-        .reduce((length, line) => length + line.length + 1, 0);
-      const offset = Math.min(control.value.length, before + error.column - 1);
-      control.setSelectionRange(offset, Math.min(offset + 1, control.value.length));
-    }
-  } else {
-    $('#input-error').focus();
   }
   status.textContent = control
     ? 'Check the highlighted field and try again.'
@@ -488,8 +597,9 @@ function setVisibility() {
   document.querySelectorAll('.value-only').forEach((element) => {
     element.hidden = call;
   });
-  document.querySelectorAll('.variable-detail').forEach((element) => {
-    element.hidden = !$('#variable-form').value;
+  if (schema) renderVariableForms();
+  document.querySelectorAll('.reference-detail').forEach((element) => {
+    element.hidden = !$('#ref-key').value.trim();
   });
   if (schema && schema.languages[language.value]?.modifiers.length === 0) {
     $('#modifier-fieldset').hidden = true;
@@ -575,7 +685,7 @@ function renderLanguage() {
       return label;
     }),
   );
-  $('#modifier-fieldset').hidden = config.modifiers.length === 0 || !$('#variable-form').value;
+  renderVariableForms();
   [...declarationList.children].forEach(renderDeclarationLanguage);
 }
 
@@ -622,8 +732,15 @@ function collectOptions() {
     wrap_in_file: $('#wrap-in-file').checked,
     collection_layout: $('#collection-layout').value,
   };
-  if ($('#ref-case').value) options.ref_case = $('#ref-case').value;
-  if (optionalText('#ref-key') !== undefined) options.ref_key = $('#ref-key').value;
+  const refKey = optionalText('#ref-key');
+  if (refKey !== undefined) {
+    options.ref_key = refKey;
+    if ($('#ref-case').value) options.ref_case = $('#ref-case').value;
+    const refValues = collectMapping('#ref-values-editor');
+    if (refValues !== undefined) options.ref_values = refValues;
+    const boundRefs = collectMapping('#bound-refs-editor');
+    if (boundRefs !== undefined) options.bound_refs = boundRefs;
+  }
   if ($('#variable-form').value) {
     const name = $('#variable-name').value;
     if (!name.trim()) throw new InputError('Enter a variable name.', '#variable-name');
@@ -634,18 +751,6 @@ function collectOptions() {
         (input) => input.value,
       ),
     };
-  }
-  for (const [selector, name] of [
-    ['#ref-values', 'ref_values'],
-    ['#bound-refs', 'bound_refs'],
-  ]) {
-    const value = parseJSON(
-      selector,
-      selector === '#ref-values' ? 'Reference values' : 'Bound references',
-      undefined,
-      'object',
-    );
-    if (value !== undefined) options[name] = value;
   }
   if (operation.value === 'value') {
     options.include_delimiters = $('#include-delimiters').checked;
@@ -660,12 +765,7 @@ function collectOptions() {
         '#pre-indent-level',
       );
     }
-    const substitutions = parseJSON(
-      '#record-null-substitutions',
-      'Null substitutions',
-      undefined,
-      'object',
-    );
+    const substitutions = collectMapping('#record-null-substitutions-editor');
     if (substitutions !== undefined) options.record_null_substitutions = substitutions;
   } else {
     options.target_function = $('#target-function').value;
@@ -743,7 +843,7 @@ function renderOutputViews() {
   outputView.hidden = views.length < 2;
 }
 
-function clearResult(message = 'Click Convert to update the output.') {
+function clearResult(message = 'Waiting for input…') {
   result = undefined;
   output.value = '';
   outputHighlight.textContent = '';
@@ -758,24 +858,15 @@ worker.onmessage = ({ data }) => {
     updateLanguageChoices();
     renderLanguage();
     language.disabled = false;
-    convertButton.disabled = false;
-    convertButton.textContent = 'Convert';
+    converterAvailable = true;
     status.textContent = idleStatus;
-    form.requestSubmit();
+    scheduleConversion();
   } else if (data.type === 'result' && data.id === activeId) {
     clearError();
     result = data.result;
     renderOutputViews();
     showResult();
-    if (data.id === revealOutputFor && matchMedia('(max-width: 740px)').matches) {
-      outputDisplay.closest('.pane').scrollIntoView({
-        block: 'start',
-        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-      });
-    }
     status.textContent = idleStatus;
-    convertButton.disabled = false;
-    convertButton.textContent = 'Convert';
   } else if (data.type === 'error' && (!data.id || data.id === activeId)) {
     clearResult('Check the input and try again.');
     showError(
@@ -789,8 +880,7 @@ worker.onmessage = ({ data }) => {
             detail: data.message,
           }),
     );
-    convertButton.disabled = data.id === undefined;
-    convertButton.textContent = data.id === undefined ? 'Unavailable' : 'Convert';
+    if (data.id === undefined) converterAvailable = false;
   }
 };
 worker.onerror = (event) => {
@@ -799,57 +889,68 @@ worker.onerror = (event) => {
     message: 'The converter stopped unexpectedly. Refresh the page and try again.',
     detail: event.message,
   });
-  convertButton.disabled = true;
-  convertButton.textContent = 'Unavailable';
+  converterAvailable = false;
 };
-form.addEventListener('submit', (event) => {
-  event.preventDefault();
+
+function convert(id) {
+  if (operation.value === 'compose') {
+    const declarations = [...declarationList.querySelectorAll('.declaration-source')];
+    if (declarations.length === 0 || declarations.some((control) => !control.value.trim())) {
+      clearError();
+      clearResult(
+        declarations.length === 0
+          ? 'Add a declaration to generate code.'
+          : 'Enter a value for each declaration.',
+      );
+      return;
+    }
+  }
   try {
     clearError();
     const request = collectRequest();
-    activeId = ++nextId;
-    revealOutputFor = event.submitter === convertButton ? activeId : 0;
     clearResult('Converting…');
-    convertButton.disabled = true;
-    convertButton.textContent = 'Converting…';
-    status.textContent = 'Converting…';
-    worker.postMessage({ type: 'convert', id: activeId, request });
+    worker.postMessage({ type: 'convert', id, request });
   } catch (error) {
     clearResult('Check the input and try again.');
     showError(error);
-    convertButton.disabled = false;
-    convertButton.textContent = 'Convert';
   }
-});
+}
+
+function scheduleConversion(delay = 0) {
+  if (!schema || !converterAvailable) return;
+  clearTimeout(conversionTimer);
+  activeId = ++nextId;
+  const id = activeId;
+  conversionTimer = setTimeout(() => convert(id), delay);
+}
+
 function markInputChanged(event) {
   if (event.target === outputView || event.target.id === 'language-option-picker') return;
   if (event.target === source) paintInput();
-  if (!schema || convertButton.textContent === 'Unavailable') return;
+  if (!schema || !converterAvailable) return;
   clearError();
-  if (convertButton.textContent === 'Converting…') {
-    activeId = ++nextId;
-    convertButton.disabled = false;
-    convertButton.textContent = 'Convert';
-  }
-  clearResult();
   status.textContent = idleStatus;
+  const mappingRow = event.target.closest('.mapping-row');
+  if (mappingRow) {
+    const hasKey = Boolean(mappingRow.querySelector('.mapping-key').value.trim());
+    const hasValue = Boolean(mappingRow.querySelector('.mapping-value').value.trim());
+    if (hasKey !== hasValue) {
+      clearTimeout(conversionTimer);
+      activeId = ++nextId;
+      clearResult('Enter both fields to continue.');
+      return;
+    }
+  }
+  scheduleConversion(event.type === 'input' ? 250 : 0);
 }
 form.addEventListener('input', markInputChanged);
 form.addEventListener('change', markInputChanged);
+form.addEventListener('click', (event) => {
+  const button = event.target.closest('.add-mapping-row');
+  if (button) addMappingRow(button.closest('.mapping-editor'));
+});
 operation.addEventListener('change', setVisibility);
 format.addEventListener('change', setVisibility);
-$('#load-example').addEventListener('click', () => {
-  applyExample();
-  clearError();
-  clearResult();
-  if (schema) {
-    activeId = ++nextId;
-    convertButton.disabled = false;
-    convertButton.textContent = 'Convert';
-    status.textContent = idleStatus;
-  }
-  source.focus();
-});
 $('#compose-setup').addEventListener('click', () => {
   $('#compose-panel').open = true;
   const row = declarationList.firstElementChild ?? addDeclaration();
@@ -859,6 +960,8 @@ $('#add-declaration').addEventListener('click', () => {
   addDeclaration().querySelector('.declaration-source').focus();
 });
 $('#variable-form').addEventListener('change', setVisibility);
+$('#wrap-in-file').addEventListener('change', renderVariableForms);
+$('#ref-key').addEventListener('input', setVisibility);
 $('#per-element').addEventListener('change', setVisibility);
 language.addEventListener('change', () => {
   if (operation.value !== 'value') {
@@ -874,6 +977,7 @@ $('#language-option-picker').addEventListener('change', (event) => {
     $(`#language-options [data-name="${CSS.escape(event.target.value)}"]`).focus();
   }
 });
+$('#language-options').addEventListener('change', renderVariableForms);
 outputView.addEventListener('change', showResult);
 source.addEventListener('scroll', () => {
   sourceHighlight.parentElement.scrollTop = source.scrollTop;

@@ -154,10 +154,6 @@ button:disabled {
   cursor: default;
 }
 
-#convert {
-  min-width: 112px;
-}
-
 .secondary {
   min-height: 30px;
   padding: 3px 10px;
@@ -224,17 +220,6 @@ button:disabled {
 
 .input-error p {
   margin: 4px 0 0;
-  white-space: pre-wrap;
-}
-
-.input-error details {
-  margin-top: 8px;
-  font-size: 0.875rem;
-}
-
-.input-error pre {
-  overflow: auto;
-  margin: 5px 0 0;
   white-space: pre-wrap;
 }
 
@@ -305,7 +290,6 @@ button:disabled {
   font-size: 0.875rem;
 }
 
-.input-actions,
 .output-actions {
   display: flex;
   align-items: center;
@@ -651,6 +635,52 @@ fieldset legend {
   font-weight: 600;
 }
 
+.mapping-editor {
+  grid-column: 1 / -1;
+  padding: 13px 14px 14px;
+}
+
+.mapping-editor > p {
+  max-width: 760px;
+  margin: 2px 0 12px;
+}
+
+.mapping-rows {
+  display: grid;
+  margin-bottom: 10px;
+}
+
+.mapping-rows:empty {
+  display: none;
+}
+
+.mapping-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(240px, 1.5fr) auto;
+  align-items: end;
+  gap: 8px 10px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.mapping-row label {
+  display: grid;
+  gap: 6px;
+  color: #4a4c47;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.mapping-row small {
+  grid-column: 2 / -1;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.remove-mapping-row {
+  margin-bottom: 10px;
+}
+
 #modifiers,
 .declaration-modifiers {
   display: flex;
@@ -722,10 +752,6 @@ fieldset legend {
     width: 100%;
   }
 
-  #convert {
-    flex: 0 0 auto;
-  }
-
   .mode-guidance {
     gap: 10px;
   }
@@ -759,6 +785,19 @@ fieldset legend {
   .code-output {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+  }
+
+  .mapping-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mapping-row small {
+    grid-column: auto;
+  }
+
+  .remove-mapping-row {
+    justify-self: start;
+    margin-bottom: 0;
   }
 }
 
