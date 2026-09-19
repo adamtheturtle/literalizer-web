@@ -393,7 +393,8 @@ function setVisibility() {
   if (schema && schema.languages[language.value]?.modifiers.length === 0) {
     $('#modifier-fieldset').hidden = true;
   }
-  $('.mode-guidance').hidden = !call;
+  $('.mode-guidance').classList.toggle('is-empty', !call);
+  $('.mode-guidance').setAttribute('aria-hidden', String(!call));
   $('#mode-help').hidden = operation.value === 'compose' && !callLanguageNotice;
   $('#compose-setup').hidden = operation.value !== 'compose';
   $('#mode-help').textContent = callLanguageNotice + ($('#per-element').checked
