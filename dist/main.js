@@ -397,9 +397,10 @@ function showError(error) {
   $('#error-detail-text').textContent = error.detail ?? '';
   $('#input-error').hidden = false;
   if (control) {
-    if (control.closest('#language-options > label')?.hidden) {
-      $('#language-search').value = '';
-      filterLanguageFields();
+    const languageLabel = control.closest('#language-options > label');
+    if (languageLabel?.hidden) {
+      $('#language-option-picker').value = languageLabel.dataset.field;
+      showLanguageField(languageLabel.dataset.field);
     }
     for (
       let panel = control.closest('details');
@@ -538,23 +539,28 @@ function languageField(field) {
   return label;
 }
 
-function filterLanguageFields() {
-  const query = $('#language-search').value.trim().toLowerCase();
-  let visible = 0;
+function showLanguageField(name) {
   document.querySelectorAll('#language-options > label').forEach((label) => {
-    label.hidden = !label.dataset.field.replaceAll('_', ' ').includes(query);
-    if (!label.hidden) visible++;
+    label.hidden = label.dataset.field !== name;
   });
-  $('#language-no-results').hidden = visible > 0;
 }
 
 function renderLanguage() {
   const config = schema.languages[language.value];
-  $('#language-options').replaceChildren(
-    ...config.fields
-      .filter((field) => field.kind !== 'enum' || field.choices.length + Number(field.nullable) > 1)
-      .map(languageField),
+  const fields = config.fields.filter(
+    (field) => field.kind !== 'enum' || field.choices.length + Number(field.nullable) > 1,
   );
+  const controls = fields.map(languageField);
+  controls.forEach((control) => {
+    control.hidden = true;
+  });
+  $('#language-options').replaceChildren(...controls);
+  $('#language-option-picker').replaceChildren(
+    new Option('Choose an option…', ''),
+    ...fields.map((field) => new Option(displayName(field.name), field.name)),
+  );
+  $('#language-options-summary').textContent = `${displayLanguage(language.value)} options`;
+  $('#language-panel').hidden = fields.length === 0;
   $('#ref-case').replaceChildren(
     new Option('No conversion', ''),
     ...config.ref_cases.sort().map((name) => new Option(displayName(name), name)),
@@ -571,7 +577,6 @@ function renderLanguage() {
   );
   $('#modifier-fieldset').hidden = config.modifiers.length === 0 || !$('#variable-form').value;
   [...declarationList.children].forEach(renderDeclarationLanguage);
-  filterLanguageFields();
 }
 
 function collectLanguageOptions() {
@@ -817,7 +822,7 @@ form.addEventListener('submit', (event) => {
   }
 });
 function markInputChanged(event) {
-  if (event.target === outputView || event.target.id === 'language-search') return;
+  if (event.target === outputView || event.target.id === 'language-option-picker') return;
   if (event.target === source) paintInput();
   if (!schema || convertButton.textContent === 'Unavailable') return;
   clearError();
@@ -863,7 +868,12 @@ language.addEventListener('change', () => {
   }
   renderLanguage();
 });
-$('#language-search').addEventListener('input', filterLanguageFields);
+$('#language-option-picker').addEventListener('change', (event) => {
+  showLanguageField(event.target.value);
+  if (event.target.value) {
+    $(`#language-options [data-name="${CSS.escape(event.target.value)}"]`).focus();
+  }
+});
 outputView.addEventListener('change', showResult);
 source.addEventListener('scroll', () => {
   sourceHighlight.parentElement.scrollTop = source.scrollTop;

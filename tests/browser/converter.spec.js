@@ -34,3 +34,16 @@ test('keeps the editors stationary while changing creation mode', async ({ page 
 
   expect(new Set(tops).size).toBe(1);
 });
+
+test('shows one language option at a time', async ({ page }) => {
+  await waitForConverter(page);
+
+  await page.locator('#language-panel').getByText('Python options').click();
+  await expect(page.locator('#language-options > label:visible')).toHaveCount(0);
+
+  await page.locator('#language-option-picker').selectOption({ index: 1 });
+  await expect(page.locator('#language-options > label:visible')).toHaveCount(1);
+
+  await page.locator('#language-option-picker').selectOption({ index: 2 });
+  await expect(page.locator('#language-options > label:visible')).toHaveCount(1);
+});
