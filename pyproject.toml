@@ -22,7 +22,7 @@ dev = [
     "prek==0.5.3",
     "pyproject-fmt==2.29.4",
     "pytest==9.1.1",
-    "ruff==0.16.7",
+    "ruff==0.16.8",
     "shellcheck-py==0.11.0.1",
     "snapper-fmt==0.11.5",
     "vale==3.22.0.0",
