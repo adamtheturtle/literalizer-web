@@ -17,7 +17,7 @@ urls.Source = "https://github.com/adamtheturtle/literalizer-web"
 
 [dependency-groups]
 dev = [
-    "actionlint-py==1.7.12.24",
+    "actionlint-py==1.7.12.25",
     "literalizer",
     "prek==0.5.3",
     "pyproject-fmt==2.29.4",
