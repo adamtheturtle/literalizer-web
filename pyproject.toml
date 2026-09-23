@@ -24,7 +24,7 @@ dev = [
     "pytest==9.1.1",
     "ruff==0.16.8",
     "shellcheck-py==0.11.0.1",
-    "snapper-fmt==0.11.5",
+    "snapper-fmt==0.11.6",
     "vale==3.22.0.0",
     "yamlfix==1.19.1",
     "zizmor==1.30.1",
