@@ -52,8 +52,8 @@ keep_full_version = true
 max_supported_python = "3.14"
 
 [tool.pytest]
-ini_options.testpaths = [ "tests/python" ]
-ini_options.xfail_strict = true
+testpaths = [ "tests/python" ]
+xfail_strict = true
 
 [tool.yamlfix]
 section_whitelines = 1
