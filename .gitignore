@@ -15,3 +15,7 @@ __pycache__/
 # Vale packages downloaded by `vale sync`
 styles/ai-tells/
 styles/config/
+
+# Karva test results and duration cache.
+.karva/
+.karva_cache/

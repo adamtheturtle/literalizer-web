@@ -35,7 +35,7 @@ jobs:
       - name: Check Python types
         run: uv run --group=dev -m mypy
       - name: Test browser bridge
-        run: uv run pytest
+        run: uv run karva test
 
   javascript:
     runs-on: ubuntu-latest

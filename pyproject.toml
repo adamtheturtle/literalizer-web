@@ -18,12 +18,11 @@ urls.Source = "https://github.com/adamtheturtle/literalizer-web"
 [dependency-groups]
 dev = [
     "actionlint-py==1.7.12.25",
+    "karva==0.0.1a12",
     "literalizer",
     "mypy==2.4.0",
-    "mypy-pytest-parametrize==2026.10.5",
     "prek==0.5.4",
     "pyproject-fmt==2.29.4",
-    "pytest==9.1.1",
     "ruff==0.16.10",
     "shellcheck-py==0.11.0.1",
     "snapper-fmt==0.11.7",
@@ -34,6 +33,7 @@ dev = [
 
 [tool.uv]
 required-version = "==0.11.7"
+dependency-groups.dev = { requires-python = "<3.15" }
 sources.literalizer = { path = "dist/literalizer-2026.9.4.post548+gf41d2a15b-py3-none-any.whl" }
 package = false
 
@@ -56,11 +56,9 @@ max_supported_python = "3.14"
 [tool.mypy]
 mypy_path = "dist"
 files = [ "dist/bridge.py", "tests/python" ]
-plugins = [ "mypy_pytest_parametrize" ]
 
-[tool.pytest]
-testpaths = [ "tests/python" ]
-xfail_strict = true
+[tool.karva]
+profile.default.src.include = [ "tests/python" ]
 
 [tool.yamlfix]
 section_whitelines = 1
