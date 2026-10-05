@@ -54,5 +54,6 @@ hooks = [
   { id = "uv-lock", name = "uv lock", entry = "uv lock --check", language = "system", pass_filenames = false, files = '^(pyproject\.toml|uv\.lock)$', priority = 270, stages = ["pre-commit"], groups = ["fast"] },
   { id = "generated-highlighter", name = "Generated highlighter", entry = "npm run check:generated", language = "system", pass_filenames = false, files = '^(src/highlighter\.js|dist/highlighter\.js|package(-lock)?\.json)$', stages = ["pre-push"], groups = ["test"] },
   { id = "javascript-tests", name = "JavaScript tests", entry = "npm test", language = "system", pass_filenames = false, files = '\.(js|json)$', stages = ["pre-push"], groups = ["test"] },
+  { id = "mypy", name = "mypy", entry = "uv run --group=dev -m mypy", language = "system", pass_filenames = false, files = '\.(py|toml|whl)$', stages = ["pre-push"], groups = ["test"] },
   { id = "python-tests", name = "Python tests", entry = "uv run --group=dev pytest", language = "system", pass_filenames = false, files = '\.(py|toml|whl)$', stages = ["pre-push"], groups = ["test"] },
 ]
