@@ -38,7 +38,7 @@ npm ci
 uvx uv@0.11.7 sync --group dev
 uvx uv@0.11.7 run prek run --all-files --group fast
 npm test
-uvx uv@0.11.7 run pytest
+uvx uv@0.11.7 run karva test
 ```
 
 The browser tests use Chromium and load Pyodide from its CDN:
