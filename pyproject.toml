@@ -25,7 +25,7 @@ dev = [
     "pyproject-fmt==2.30.0",
     "ruff==0.16.10",
     "shellcheck-py==0.11.0.1",
-    "snapper-fmt==0.11.7",
+    "snapper-fmt==0.11.9",
     "vale==3.22.0.0",
     "yamlfix==1.19.1",
     "zizmor==1.30.1",
