@@ -76,7 +76,7 @@ jobs:
   completion-ci:
     needs: [bridge, browser, javascript]
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ !cancelled() }}
     steps:
       - name: Check test status
         run: |-
