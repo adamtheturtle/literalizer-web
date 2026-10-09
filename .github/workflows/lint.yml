@@ -45,7 +45,7 @@ jobs:
   completion-lint:
     needs: [lint]
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ !cancelled() }}
     steps:
       - name: Check lint status
         run: |-
