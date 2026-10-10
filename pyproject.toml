@@ -56,6 +56,7 @@ max_supported_python = "3.14"
 [tool.mypy]
 mypy_path = "dist"
 files = [ "dist/bridge.py", "tests/python" ]
+show_traceback = true
 
 [tool.karva]
 profile.default.src.include = [ "tests/python" ]
