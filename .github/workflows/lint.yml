@@ -5,7 +5,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened]
   schedule:
     - cron: 0 1 * * *
@@ -45,7 +44,7 @@ jobs:
   completion-lint:
     needs: [lint]
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ !cancelled() }}
     steps:
       - name: Check lint status
         run: |-
