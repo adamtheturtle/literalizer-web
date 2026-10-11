@@ -11,6 +11,7 @@ requires-python = ">=3.14"
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
 dependencies = []
 urls.Source = "https://github.com/adamtheturtle/literalizer-web"
@@ -18,7 +19,7 @@ urls.Source = "https://github.com/adamtheturtle/literalizer-web"
 [dependency-groups]
 dev = [
     "actionlint-py==1.7.12.25",
-    "karva==0.0.1a12",
+    "karva==0.0.1a13",
     "literalizer",
     "mypy==2.4.0",
     "prek==0.5.5",
@@ -33,7 +34,7 @@ dev = [
 
 [tool.uv]
 required-version = "==0.11.7"
-dependency-groups.dev = { requires-python = "<3.15" }
+dependency-groups.dev = { requires-python = "<3.16" }
 sources.literalizer = { path = "dist/literalizer-2026.9.4.post548+gf41d2a15b-py3-none-any.whl" }
 package = false
 
@@ -51,7 +52,7 @@ lint.unfixable = [ "ERA001" ]
 [tool.pyproject-fmt]
 indent = 4
 keep_full_version = true
-max_supported_python = "3.14"
+max_supported_python = "3.15"
 
 [tool.mypy]
 mypy_path = "dist"
