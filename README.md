@@ -35,10 +35,10 @@ Install the pinned Node and Python toolchains, then run the checks:
 
 ```console
 npm ci
-uvx uv@0.11.7 sync --group dev
-uvx uv@0.11.7 run prek run --all-files --group fast
+uvx uv@0.13.0 sync --group dev
+uvx uv@0.13.0 run prek run --all-files --group fast
 npm test
-uvx uv@0.11.7 run karva test
+uvx uv@0.13.0 run karva test
 ```
 
 The browser tests use Chromium and load Pyodide from its CDN:
@@ -49,4 +49,4 @@ npm run test:e2e
 ```
 
 Run `npm run build` after changing `src/highlighter.js`; the generated `dist/highlighter.js` is committed so the site can be hosted as static files.
-Install the Git hooks with `uvx uv@0.11.7 run prek install --hook-type pre-commit --hook-type pre-push`.
+Install the Git hooks with `uvx uv@0.13.0 run prek install --hook-type pre-commit --hook-type pre-push`.
