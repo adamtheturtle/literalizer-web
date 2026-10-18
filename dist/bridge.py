@@ -6,6 +6,7 @@ import inspect
 import json
 import typing
 from collections.abc import Mapping
+from importlib.metadata import version
 
 import literalizer.languages as languages
 from literalizer import (
@@ -136,6 +137,8 @@ def get_schema():
         }
     return json.dumps(
         {
+            "literalizer_version": version("literalizer"),
+            "input_formats": [member.name for member in InputFormat],
             "languages": result,
             "value_options": _option_names(literalize),
             "call_options": _option_names(literalize_call),

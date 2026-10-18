@@ -1,8 +1,13 @@
 """Tests for the browser-to-Literalizer boundary."""
 
+import inspect
 import json
 import sys
+from importlib.metadata import version
 from pathlib import Path
+
+from literalizer import InputFormat, literalize, literalize_call
+from literalizer.languages import ALL_LANGUAGES
 
 DIST = Path(__file__).parents[2] / "dist"
 sys.path.insert(0, str(DIST))
@@ -32,12 +37,18 @@ def _request(**overrides):
 def test_schema_covers_the_public_api():
     schema = json.loads(bridge.get_schema())
 
-    assert len(schema["languages"]) == 65
-    assert len(schema["value_options"]) == 10
-    assert len(schema["call_options"]) == 16
+    assert schema["literalizer_version"] == version("literalizer") == "2026.9.16"
+    assert set(schema["languages"]) == {cls.__name__ for cls in ALL_LANGUAGES}
+    assert schema["input_formats"] == [member.name for member in InputFormat]
+    for function, key in [(literalize, "value_options"), (literalize_call, "call_options")]:
+        assert set(schema[key]) == set(inspect.signature(function).parameters) - {
+            "source",
+            "input_format",
+            "language",
+        }
     assert schema["languages"]["Python"]["call_supported"] is True
     assert schema["languages"]["Yaml"]["call_supported"] is False
-    assert schema["languages"]["Jsonc"]["supports_variable_names"] is False
+    assert schema["languages"]["Json5"]["supports_variable_names"] is False
     assert schema["languages"]["Swift"]["supports_no_variable_wrap_in_file"] is False
 
 
@@ -74,3 +85,39 @@ def test_call_conversion():
 
     assert response["ok"] is True
     assert response["result"]["code"] == 'welcome(name="Ada")\nwelcome(name="Grace")'
+
+
+def test_nested_toml_call_rows():
+    request = _request(
+        operation="call",
+        source='calls = [["Ada"], ["Grace"]]',
+        format="TOML",
+        options={
+            "input_root_key": "calls",
+            "target_function": "welcome",
+            "parameter_names": ["name"],
+        },
+    )
+    response = json.loads(bridge.convert(json.dumps(request)))
+    assert response["ok"] is True
+    assert response["result"]["code"] == 'welcome(name="Ada")\nwelcome(name="Grace")'
+
+
+def test_compose_declarations_and_calls():
+    request = _request(
+        operation="compose",
+        source='[[{"$ref": "person"}]]',
+        options={"target_function": "welcome", "parameter_names": ["name"], "ref_key": "$ref"},
+        declarations=[
+            {
+                "source": '"Ada"',
+                "format": "JSON",
+                "options": {"variable_form": {"kind": "NewVariable", "name": "person"}},
+            }
+        ],
+    )
+    response = json.loads(bridge.convert(json.dumps(request)))
+    assert response["ok"] is True
+    code = response["result"]["code"]
+    assert 'person = "Ada"' in code
+    assert "welcome(name=person)" in code

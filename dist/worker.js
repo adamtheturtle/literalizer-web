@@ -3,12 +3,26 @@ import { loadPyodide } from 'https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyod
 let pyodide;
 async function initialize() {
   pyodide = await loadPyodide();
-  await pyodide.loadPackage('micropip');
+  await pyodide.loadPackage(['micropip', 'packaging']);
   pyodide.globals.set(
     '_web_wheel_url',
-    new URL('./literalizer-2026.9.4.post548+gf41d2a15b-py3-none-any.whl', self.location.href).href,
+    new URL('./literalizer-2026.9.16-py3-none-any.whl', self.location.href).href,
   );
-  await pyodide.runPythonAsync('import micropip\nawait micropip.install(_web_wheel_url)');
+  await pyodide.runPythonAsync(`
+import micropip
+from importlib.metadata import requires
+from packaging.requirements import Requirement
+
+# The published wheel requires a native YAML accelerator on CPython,
+# including Pyodide. ruamel.yaml uses its pure-Python parser without it.
+await micropip.install(_web_wheel_url, deps=False)
+requirements = [Requirement(item) for item in requires("literalizer")]
+await micropip.install([
+    str(item) for item in requirements
+    if item.name != "ruamel-yaml-clib"
+    and (item.marker is None or item.marker.evaluate())
+])
+`);
   const bridge = await fetch(new URL('./bridge.py', self.location.href), { cache: 'no-store' });
   if (!bridge.ok) throw new Error(`Could not load browser bridge: ${bridge.status}`);
   pyodide.runPython(await bridge.text());
