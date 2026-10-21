@@ -231,19 +231,19 @@ wheels = [
 
 [[package]]
 name = "literalizer"
-version = "2026.9.4.post548+gf41d2a15b"
-source = { path = "dist/literalizer-2026.9.4.post548+gf41d2a15b-py3-none-any.whl" }
+version = "2026.9.16"
+source = { path = "dist/literalizer-2026.9.16-py3-none-any.whl" }
 dependencies = [
     { name = "beartype" },
     { name = "json5" },
     { name = "pyhumps" },
     { name = "ruamel-yaml" },
-    { name = "ruamel-yaml-clib", marker = "platform_python_implementation == 'CPython' and sys_platform != 'emscripten'" },
+    { name = "ruamel-yaml-clib", marker = "platform_python_implementation == 'CPython'" },
     { name = "tomlkit" },
     { name = "typing-extensions" },
 ]
 wheels = [
-    { filename = "literalizer-2026.9.4.post548+gf41d2a15b-py3-none-any.whl", hash = "sha256:6ec8fa5a495c55fa6c69655852f44b003a15edc63edb9e07c49adc2b3893b9cc" },
+    { filename = "literalizer-2026.9.16-py3-none-any.whl", hash = "sha256:ed4d117ad8d06fff18a4479b640cfa2a4987f9015f79adedcb71daca10806c97" },
 ]
 
 [package.metadata]
@@ -252,7 +252,7 @@ requires-dist = [
     { name = "json5", specifier = ">=0.12" },
     { name = "pyhumps", specifier = ">=3.8" },
     { name = "ruamel-yaml", specifier = ">=0.18.16" },
-    { name = "ruamel-yaml-clib", marker = "platform_python_implementation == 'CPython' and sys_platform != 'emscripten'", specifier = ">=0.2.15" },
+    { name = "ruamel-yaml-clib", marker = "platform_python_implementation == 'CPython'", specifier = ">=0.2.15" },
     { name = "tomlkit", specifier = ">=0.15" },
     { name = "typing-extensions", specifier = ">=4.10" },
 ]
@@ -287,7 +287,7 @@ dev = "<3.16"
 dev = [
     { name = "actionlint-py", marker = "python_full_version < '3.16'", specifier = "==1.7.12.25" },
     { name = "karva", marker = "python_full_version < '3.16'", specifier = "==0.0.1a13" },
-    { name = "literalizer", marker = "python_full_version < '3.16'", path = "dist/literalizer-2026.9.4.post548+gf41d2a15b-py3-none-any.whl" },
+    { name = "literalizer", marker = "python_full_version < '3.16'", path = "dist/literalizer-2026.9.16-py3-none-any.whl" },
     { name = "mypy", marker = "python_full_version < '3.16'", specifier = "==2.4.0" },
     { name = "prek", marker = "python_full_version < '3.16'", specifier = "==0.5.6" },
     { name = "pyproject-fmt", marker = "python_full_version < '3.16'", specifier = "==2.30.3" },

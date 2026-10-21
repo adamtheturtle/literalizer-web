@@ -6,12 +6,14 @@ Pyodide and the pure-Python dependencies download on first load.
 Syntax highlighting is bundled locally with highlight.js, so typing and viewing generated code do not make additional requests to a highlighting service.
 Languages without a dedicated grammar get basic highlighting for strings, numbers, and comments.
 
-The included wheel is built from `adamtheturtle/literalizer` commit `f41d2a15b1b5e7ca71f8afcddf7600321b09a7de` and installed with normal dependency resolution.
-Its optional YAML C accelerator is excluded on Emscripten, where `ruamel.yaml` uses its pure-Python parser.
+The included wheel is the unmodified Literalizer 2026.9.16 release from PyPI (SHA-256 `ed4d117ad8d06fff18a4479b640cfa2a4987f9015f79adedcb71daca10806c97`).
+The worker installs its declared dependencies except the native YAML C accelerator, which has no Emscripten wheel.
+`ruamel.yaml` uses its pure-Python parser in the browser.
 
 The form covers all arguments to `literalize` and `literalize_call`, and the composition mode covers `literalize_call_with_declarations`.
-Language settings are generated from the 65 built-in language dataclasses in the wheel.
-JSON, JSONC, JSON5, YAML, and TOML are available as input formats.
+Language settings are generated from the built-in language dataclasses in the wheel.
+Input format choices come from the installed release: JSON, JSON5, YAML, and TOML.
+JSONC input and output require an unreleased Literalizer version and are not offered by this release.
 Function call modes list only languages that can produce calls; value mode retains every language.
 An incompatible value-mode selection is restored when returning from a call mode.
 The input editor has working examples for each format and operation; switching formats replaces an untouched example but preserves user-entered input.

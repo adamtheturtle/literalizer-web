@@ -1,6 +1,6 @@
 import { highlightCode } from './highlighter.js?v=15';
 
-const worker = new Worker(new URL('./worker.js?v=15', import.meta.url), { type: 'module' });
+const worker = new Worker(new URL('./worker.js?v=16', import.meta.url), { type: 'module' });
 const $ = (selector) => document.querySelector(selector);
 const form = $('#converter');
 const operation = $('#operation');
@@ -29,15 +29,12 @@ let nextMappingId = 0;
 const examples = {
   value: {
     JSON: '{\n  "authors": ["Ada", "Grace"],\n  "reviewers": ["Linus", "Margaret"]\n}',
-    JSONC:
-      '{\n  // People on the project\n  "authors": ["Ada", "Grace"],\n  "reviewers": ["Linus", "Margaret"]\n}',
     JSON5: "{\n  authors: ['Ada', 'Grace'],\n  reviewers: ['Linus', 'Margaret']\n}",
     YAML: 'authors:\n  - Ada\n  - Grace\nreviewers:\n  - Linus\n  - Margaret',
     TOML: 'authors = ["Ada", "Grace"]\nreviewers = ["Linus", "Margaret"]',
   },
   call: {
     JSON: '[\n  ["Ada"],\n  ["Grace"]\n]',
-    JSONC: '[\n  // One row per call\n  ["Ada"],\n  ["Grace"]\n]',
     JSON5: "[\n  ['Ada'],\n  ['Grace']\n]",
     YAML: '- [Ada]\n- [Grace]',
     TOML: 'calls = [["Ada"], ["Grace"]]',
@@ -316,7 +313,7 @@ function addDeclaration() {
   row.innerHTML = `
     <div class="declaration-heading"><strong class="declaration-number"></strong><button class="remove-declaration text-button" type="button">Remove</button></div>
     <div class="declaration-fields">
-      <label>From <select class="declaration-format" id="declaration-format-${id}"><option>JSON</option><option>JSONC</option><option>JSON5</option><option>YAML</option><option>TOML</option></select></label>
+      <label>From <select class="declaration-format" id="declaration-format-${id}"></select></label>
       <label class="declaration-form-label">Save as <select class="declaration-form" id="declaration-form-${id}"><option value="NewVariable" selected>New variable</option></select></label>
       <label class="declaration-name-label">Variable name <input class="declaration-name" id="declaration-name-${id}" value="value"></label>
       <label class="declaration-source-label">Value
@@ -349,6 +346,10 @@ function addDeclaration() {
         <fieldset class="declaration-modifier-fieldset"><legend>Variable modifiers</legend><div class="declaration-modifiers"></div></fieldset>
       </div>
     </details>`;
+  const inputFormats = schema?.input_formats ?? [...format.options].map((option) => option.value);
+  row
+    .querySelector('.declaration-format')
+    .replaceChildren(...inputFormats.map((name) => new Option(name, name)));
   row.querySelector('.declaration-format').value = format.value;
   row.querySelector('.declaration-name').value = id === 1 ? 'value' : `value${id}`;
   const declarationSource = row.querySelector('.declaration-source');
@@ -363,7 +364,6 @@ function addDeclaration() {
   const updatePlaceholder = () => {
     row.querySelector('.declaration-source').placeholder = {
       JSON: '{"id": 1}',
-      JSONC: '{// Comment\n"id": 1}',
       JSON5: '{id: 1}',
       YAML: 'id: 1',
       TOML: 'id = 1',
@@ -855,6 +855,16 @@ function clearResult(message = 'Waiting for input…') {
 worker.onmessage = ({ data }) => {
   if (data.type === 'ready') {
     schema = data.schema;
+    const selectedFormat = format.value;
+    const selectedZipFormat = $('#zip-input-format').value;
+    format.replaceChildren(...schema.input_formats.map((name) => new Option(name, name)));
+    if (schema.input_formats.includes(selectedFormat)) format.value = selectedFormat;
+    $('#zip-input-format').replaceChildren(
+      new Option('Same as input', ''),
+      ...schema.input_formats.map((name) => new Option(name, name)),
+    );
+    if (schema.input_formats.includes(selectedZipFormat))
+      $('#zip-input-format').value = selectedZipFormat;
     updateLanguageChoices();
     renderLanguage();
     language.disabled = false;

@@ -2,7 +2,15 @@ import { expect, test } from '@playwright/test';
 
 async function waitForConverter(page) {
   await page.goto('/');
-  await expect(page.locator('#output')).not.toHaveValue('', { timeout: 120_000 });
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#output').value ||
+      document.querySelector('#input-error-message').textContent,
+    null,
+    { timeout: 120_000 },
+  );
+  await expect(page.locator('#input-error-message')).toBeEmpty();
+  await expect(page.locator('#output')).not.toHaveValue('');
 }
 
 test('converts data and reports invalid input', async ({ page }) => {
@@ -111,7 +119,7 @@ test('only offers variable forms supported by the language and file mode', async
   await page.getByText('Output options').click();
   await page.locator('#variable-form').selectOption('NewVariable');
   await expect(page.locator('#output')).toHaveValue(/value =/);
-  await page.locator('#language').selectOption('Jsonc');
+  await page.locator('#language').selectOption('Json5');
   await expect(page.locator('#variable-form-label')).toBeHidden();
   await expect(page.locator('#variable-form')).toHaveValue('');
   await expect(page.locator('#output')).not.toHaveValue(/value =/);
@@ -122,5 +130,23 @@ test('only offers variable forms supported by the language and file mode', async
   await expect(page.locator('#variable-form-label')).toBeHidden();
   await expect(page.locator('#variable-form')).toHaveValue('NewVariable');
   await expect(page.locator('#output')).toHaveValue(/let value =/);
+  await expect(page.locator('#input-error-message')).toBeEmpty();
+});
+
+test('uses published input formats and nested TOML call rows', async ({ page }) => {
+  await waitForConverter(page);
+  await expect(page.locator('#format option')).toHaveText(['JSON', 'JSON5', 'YAML', 'TOML']);
+  await page.locator('#operation').selectOption('call');
+  await page.locator('#format').selectOption('TOML');
+  await expect(page.locator('#output')).toHaveValue('consume(value="Ada")\nconsume(value="Grace")');
+  await expect(page.locator('#input-error-message')).toBeEmpty();
+});
+
+test('converts YAML comments with the browser pure-Python parser', async ({ page }) => {
+  await waitForConverter(page);
+  await page.locator('#format').selectOption('YAML');
+  await page.locator('#source').fill('# People\nname: Ada');
+  await expect(page.locator('#output')).toHaveValue(/# People/);
+  await expect(page.locator('#output')).toHaveValue(/"name": "Ada"/);
   await expect(page.locator('#input-error-message')).toBeEmpty();
 });
