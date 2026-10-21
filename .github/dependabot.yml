@@ -8,6 +8,9 @@ updates:
       interval: daily
     open-pull-requests-limit: 10
   - package-ecosystem: uv
+    # The bundled Literalizer wheel is refreshed with the browser assets.
+    ignore:
+      - dependency-name: literalizer
     allow:
       - dependency-type: all
     directory: /
