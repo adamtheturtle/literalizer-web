@@ -38,6 +38,7 @@ hooks = [
 [[repos]]
 repo = "local"
 hooks = [
+  { id = "no-defaults", name = "no-defaults", entry = "uv run --group=dev no-defaults", language = "system", types = ["python"], require_serial = true, priority = 195, stages = ["pre-commit"], groups = ["fast"] },
   { id = "prettier", name = "Prettier", entry = "npm exec -- prettier --write", language = "system", types_or = ["css", "html", "javascript", "json", "markdown"], exclude = '^(dist/highlighter\.js|package-lock\.json)$', priority = 150, stages = ["pre-commit"], groups = ["fast"] },
   { id = "eslint", name = "ESLint", entry = "npm exec -- eslint --fix", language = "system", types = ["javascript"], exclude = '^dist/highlighter\.js$', priority = 160, stages = ["pre-commit"], groups = ["fast"] },
   { id = "stylelint", name = "Stylelint", entry = "npm exec -- stylelint --fix", language = "system", files = '\.css$', priority = 170, stages = ["pre-commit"], groups = ["fast"] },
