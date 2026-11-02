@@ -22,6 +22,7 @@ dev = [
     "karva==0.0.1a13",
     "literalizer==2026.9.16",
     "mypy==2.4.0",
+    "no-defaults==2026.9.1",
     "prek==0.5.7",
     "pyproject-fmt==2.30.3",
     "ruff==0.17.3",
@@ -49,6 +50,7 @@ lint.per-file-ignores."tests/**/test_*.py" = [
     "S101",
 ]
 lint.unfixable = [ "ERA001" ]
+lint.external = [ "NOD" ]
 
 [tool.pyproject-fmt]
 indent = 4
@@ -66,3 +68,7 @@ profile.default.src.include = [ "tests/python" ]
 [tool.yamlfix]
 section_whitelines = 1
 whitelines = 1
+
+[tool.no_defaults]
+private_only = true
+per_file_enforcement."tests/**" = "all"
