@@ -21,7 +21,7 @@ dev = [
     "actionlint-py==1.7.12.25",
     "karva==0.0.1a13",
     "literalizer==2026.9.16",
-    "mypy==2.4.0",
+    "mypy==2.4.1",
     "no-defaults==2026.9.1",
     "prek==0.5.7",
     "pyproject-fmt==2.30.3",
