@@ -1,6 +1,6 @@
 import { highlightCode } from './highlighter.js?v=15';
 
-const worker = new Worker(new URL('./worker.js?v=16', import.meta.url), { type: 'module' });
+const worker = new Worker(new URL('./worker.js?v=17', import.meta.url), { type: 'module' });
 const $ = (selector) => document.querySelector(selector);
 const form = $('#converter');
 const operation = $('#operation');
@@ -29,12 +29,15 @@ let nextMappingId = 0;
 const examples = {
   value: {
     JSON: '{\n  "authors": ["Ada", "Grace"],\n  "reviewers": ["Linus", "Margaret"]\n}',
+    JSONC:
+      '{\n  // Authors\n  "authors": ["Ada", "Grace"],\n  "reviewers": ["Linus", "Margaret"]\n}',
     JSON5: "{\n  authors: ['Ada', 'Grace'],\n  reviewers: ['Linus', 'Margaret']\n}",
     YAML: 'authors:\n  - Ada\n  - Grace\nreviewers:\n  - Linus\n  - Margaret',
     TOML: 'authors = ["Ada", "Grace"]\nreviewers = ["Linus", "Margaret"]',
   },
   call: {
     JSON: '[\n  ["Ada"],\n  ["Grace"]\n]',
+    JSONC: '[\n  // Call rows\n  ["Ada"],\n  ["Grace"]\n]',
     JSON5: "[\n  ['Ada'],\n  ['Grace']\n]",
     YAML: '- [Ada]\n- [Grace]',
     TOML: 'calls = [["Ada"], ["Grace"]]',
@@ -364,6 +367,7 @@ function addDeclaration() {
   const updatePlaceholder = () => {
     row.querySelector('.declaration-source').placeholder = {
       JSON: '{"id": 1}',
+      JSONC: '{"id": 1}',
       JSON5: '{id: 1}',
       YAML: 'id: 1',
       TOML: 'id = 1',
