@@ -20,7 +20,7 @@ urls.Source = "https://github.com/adamtheturtle/literalizer-web"
 dev = [
     "actionlint-py==1.7.12.25",
     "karva==0.0.1a13",
-    "literalizer==2026.9.16",
+    "literalizer==2026.11.4.2",
     "mypy==2.4.1",
     "no-defaults==2026.9.1",
     "prek==0.5.9",
@@ -37,7 +37,7 @@ dev = [
 # Dependabot currently ships uv 0.12.18; CI pins uv separately.
 required-version = ">=0.12.18"
 dependency-groups.dev = { requires-python = "<3.16" }
-sources.literalizer = { path = "dist/literalizer-2026.9.16-py3-none-any.whl" }
+sources.literalizer = { path = "dist/literalizer-2026.11.4.2-py3-none-any.whl" }
 package = false
 
 [tool.ruff]

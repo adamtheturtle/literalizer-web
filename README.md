@@ -6,14 +6,14 @@ Pyodide and the pure-Python dependencies download on first load.
 Syntax highlighting is bundled locally with highlight.js, so typing and viewing generated code do not make additional requests to a highlighting service.
 Languages without a dedicated grammar get basic highlighting for strings, numbers, and comments.
 
-The included wheel is the unmodified Literalizer 2026.9.16 release from PyPI (SHA-256 `ed4d117ad8d06fff18a4479b640cfa2a4987f9015f79adedcb71daca10806c97`).
-The worker installs its declared dependencies except the native YAML C accelerator, which has no Emscripten wheel.
+The included wheel is the unmodified Literalizer 2026.11.4.2 release from PyPI (SHA-256 `842cdc013370503cd4de37986b946bb6444060ded3c9bc95bb427dcd62469edf`).
+The worker uses normal `micropip.install(...)` dependency resolution.
+The published dependency marker excludes the native YAML C accelerator on Emscripten.
 `ruamel.yaml` uses its pure-Python parser in the browser.
 
 The form covers all arguments to `literalize` and `literalize_call`, and the composition mode covers `literalize_call_with_declarations`.
 Language settings are generated from the built-in language dataclasses in the wheel.
-Input format choices come from the installed release: JSON, JSON5, YAML, and TOML.
-JSONC input and output require an unreleased Literalizer version and are not offered by this release.
+Input format choices come from the installed release: JSON, JSONC, JSON5, YAML, and TOML.
 Function call modes list only languages that can produce calls; value mode retains every language.
 An incompatible value-mode selection is restored when returning from a call mode.
 The input editor has working examples for each format and operation; switching formats replaces an untouched example but preserves user-entered input.
@@ -28,7 +28,9 @@ The affected control receives focus, and source parse errors select the reported
 To rebuild syntax highlighting, run `npm ci && npm run build`.
 The generated `dist/highlighter.js` and the library's license are committed so hosting needs no Node build step.
 
-To refresh the site, build a wheel from the desired Literalizer checkout with the repository-pinned `uv` version, copy it into `dist/`, and update its filename in `dist/worker.js`.
+To refresh the site, download the desired published Literalizer wheel from PyPI, verify its SHA-256, and replace the wheel in `dist/`.
+Update its filename in `dist/worker.js`, its version and path in `pyproject.toml`, the release assertion in `tests/python/test_bridge.py`, and the version and SHA-256 above.
+Regenerate `uv.lock` with the repository-pinned `uv` version and run the Python, JavaScript, and browser tests.
 Serve `dist/` with any static HTTP server.
 
 ## Development

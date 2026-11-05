@@ -37,7 +37,7 @@ def _request(**overrides):
 def test_schema_covers_the_public_api():
     schema = json.loads(bridge.get_schema())
 
-    assert schema["literalizer_version"] == version("literalizer") == "2026.9.16"
+    assert schema["literalizer_version"] == version("literalizer") == "2026.11.4.2"
     assert set(schema["languages"]) == {cls.__name__ for cls in ALL_LANGUAGES}
     assert schema["input_formats"] == [member.name for member in InputFormat]
     for function, key in [(literalize, "value_options"), (literalize_call, "call_options")]:

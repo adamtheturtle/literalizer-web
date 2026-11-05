@@ -135,7 +135,13 @@ test('only offers variable forms supported by the language and file mode', async
 
 test('uses published input formats and nested TOML call rows', async ({ page }) => {
   await waitForConverter(page);
-  await expect(page.locator('#format option')).toHaveText(['JSON', 'JSON5', 'YAML', 'TOML']);
+  await expect(page.locator('#format option')).toHaveText([
+    'JSON',
+    'JSONC',
+    'JSON5',
+    'YAML',
+    'TOML',
+  ]);
   await page.locator('#operation').selectOption('call');
   await page.locator('#format').selectOption('TOML');
   await expect(page.locator('#output')).toHaveValue('consume(value="Ada")\nconsume(value="Grace")');
@@ -148,5 +154,18 @@ test('converts YAML comments with the browser pure-Python parser', async ({ page
   await page.locator('#source').fill('# People\nname: Ada');
   await expect(page.locator('#output')).toHaveValue(/# People/);
   await expect(page.locator('#output')).toHaveValue(/"name": "Ada"/);
+  await expect(page.locator('#input-error-message')).toBeEmpty();
+});
+
+test('converts published JSONC examples in value and call modes', async ({ page }) => {
+  await waitForConverter(page);
+  await page.locator('#format').selectOption('JSONC');
+  await expect(page.locator('#source')).toHaveValue(/Authors/);
+  await expect(page.locator('#output')).toHaveValue(/"authors":/);
+  await expect(page.locator('#input-error-message')).toBeEmpty();
+
+  await page.locator('#operation').selectOption('call');
+  await expect(page.locator('#source')).toHaveValue(/Call rows/);
+  await expect(page.locator('#output')).toHaveValue(/consume\(value="Ada"\)/);
   await expect(page.locator('#input-error-message')).toBeEmpty();
 });
