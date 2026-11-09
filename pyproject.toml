@@ -24,7 +24,7 @@ dev = [
     "mypy==2.4.1",
     "no-defaults==2026.9.1",
     "prek==0.5.10",
-    "pyproject-fmt==2.30.3",
+    "pyproject-fmt==2.30.6",
     "ruff==0.17.4",
     "shellcheck-py==0.11.0.1",
     "snapper-fmt==0.11.10",
