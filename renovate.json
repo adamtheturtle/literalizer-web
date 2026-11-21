@@ -1,20 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "customManagers:valeVersions"
-  ],
-  "enabledManagers": [
-    "custom.regex"
-  ],
+  "extends": ["customManagers:valeVersions"],
+  "enabledManagers": ["custom.regex"],
   "dependencyDashboard": {
     "enabled": false
   },
   "automerge": false,
   "packageRules": [
     {
-      "matchPackageNames": [
-        "!tbhb/vale-ai-tells"
-      ],
+      "matchPackageNames": ["!tbhb/vale-ai-tells"],
       "enabled": false
     }
   ]
