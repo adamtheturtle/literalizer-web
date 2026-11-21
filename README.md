@@ -11,7 +11,7 @@ The worker uses normal `micropip.install(...)` dependency resolution.
 The published dependency marker excludes the native YAML C accelerator on Emscripten.
 `ruamel.yaml` uses its pure-Python parser in the browser.
 
-The form covers all arguments to `literalize` and `literalize_call`, and the composition mode covers `literalize_call_with_declarations`.
+The form provides inputs for every argument to `literalize` and `literalize_call`, and the composition mode covers `literalize_call_with_declarations`.
 Language settings are generated from the built-in language dataclasses in the wheel.
 Input format choices come from the installed release: JSON, JSONC, JSON5, YAML, and TOML.
 Function call modes list only languages that can produce calls; value mode retains every language.
@@ -26,7 +26,7 @@ Invalid source and option values appear in an alert above the editor.
 The affected control receives focus, and source parse errors select the reported character when Literalizer provides a line and column.
 
 To rebuild syntax highlighting, run `npm ci && npm run build`.
-The generated `dist/highlighter.js` and the library's license are committed so hosting needs no Node build step.
+The repository includes the generated `dist/highlighter.js` and the library's license. Hosts serve those files directly.
 
 To refresh the site, download the desired published Literalizer wheel from PyPI, verify its SHA-256, and replace the wheel in `dist/`.
 Update its filename in `dist/worker.js`, its version and path in `pyproject.toml`, the release assertion in `tests/python/test_bridge.py`, and the version and SHA-256 above.
