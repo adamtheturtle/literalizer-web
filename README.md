@@ -26,7 +26,8 @@ Invalid source and option values appear in an alert above the editor.
 The affected control receives focus, and source parse errors select the reported character when Literalizer provides a line and column.
 
 To rebuild syntax highlighting, run `npm ci && npm run build`.
-The repository includes the generated `dist/highlighter.js` and the library's license. Hosts serve those files directly.
+The repository includes the generated `dist/highlighter.js` and the library's license.
+Hosts serve those files directly.
 
 To refresh the site, download the desired published Literalizer wheel from PyPI, verify its SHA-256, and replace the wheel in `dist/`.
 Update its filename in `dist/worker.js`, its version and path in `pyproject.toml`, the release assertion in `tests/python/test_bridge.py`, and the version and SHA-256 above.
