@@ -14,7 +14,8 @@ The published dependency marker excludes the native YAML C accelerator on Emscri
 The form provides inputs for every argument to `literalize` and `literalize_call`, and the composition mode covers `literalize_call_with_declarations`.
 Language settings are generated from the built-in language dataclasses in the wheel.
 Input format choices come from the installed release: JSON, JSONC, JSON5, YAML, and TOML.
-Function call modes list only languages that can produce calls; value mode retains every language.
+The form lists languages that support calls when a call mode is selected.
+Value mode lists every language.
 An incompatible value-mode selection is restored when returning from a call mode.
 The input editor has working examples for each format and operation; switching formats replaces an untouched example but preserves user-entered input.
 Function parameters are entered as comma-separated names.
