@@ -37,7 +37,7 @@ def _request(**overrides):
 def test_schema_covers_the_public_api():
     schema = json.loads(bridge.get_schema())
 
-    assert schema["literalizer_version"] == version("literalizer") == "2026.11.4.2"
+    assert schema["literalizer_version"] == version("literalizer") == "2026.11.25"
     assert set(schema["languages"]) == {cls.__name__ for cls in ALL_LANGUAGES}
     assert schema["input_formats"] == [member.name for member in InputFormat]
     for function, key in [(literalize, "value_options"), (literalize_call, "call_options")]:
@@ -121,3 +121,18 @@ def test_compose_declarations_and_calls():
     code = response["result"]["code"]
     assert 'person = "Ada"' in code
     assert "welcome(name=person)" in code
+
+
+def test_purescript_qualified_imports():
+    request = _request(
+        source="[1, 2]",
+        language="PureScript",
+        language_options={"module_name": "Sample", "qualified_imports": [["Data.Array", "Arr"]]},
+        options={"wrap_in_file": True, "variable_form": {"kind": "NewVariable", "name": "values"}},
+    )
+
+    response = json.loads(bridge.convert(json.dumps(request)))
+
+    assert response["ok"] is True
+    assert response["result"]["code"].startswith("module Sample where")
+    assert "import Data.Array as Arr" in response["result"]["code"]

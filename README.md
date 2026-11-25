@@ -6,7 +6,7 @@ Pyodide and the pure-Python dependencies download on first load.
 Syntax highlighting is bundled locally with highlight.js, so typing and viewing generated code do not make additional requests to a highlighting service.
 Languages without a dedicated grammar get basic highlighting for strings, numbers, and comments.
 
-The included wheel is the unmodified Literalizer 2026.11.4.2 release from PyPI (SHA-256 `842cdc013370503cd4de37986b946bb6444060ded3c9bc95bb427dcd62469edf`).
+The included wheel is the unmodified Literalizer 2026.11.25 release from PyPI (SHA-256 `2292898eed99405ce41467cddcbfcf7bb5c81bb44400d0415d760a7506feae13`).
 The worker uses normal `micropip.install(...)` dependency resolution.
 The published dependency marker excludes the native YAML C accelerator on Emscripten.
 `ruamel.yaml` uses its pure-Python parser in the browser.
@@ -22,6 +22,30 @@ Function parameters are entered as comma-separated names.
 Composition mode provides an editor for each declaration's format, value, and variable, with per-declaration JSON settings available when needed.
 Python expressions, including the optional `call_transform` lambda, execute inside Pyodide in the browser.
 Mapping-valued language options use JSON `[key, value]` pairs; `record_shape_names` keys are arrays of field names, and `empty_container_type_hints` keys are arrays of path components.
+
+PureScript's `qualified_imports` option takes JSON `[module, alias]` pairs.
+
+### Invocation recipes and callable descriptions
+
+Choose **Invocation recipe** to render calls from a shared recipe or an Objective-C native invocation.
+Enter a JSON object with an `invocation` object and `rows` containing the call arguments:
+
+```json
+{
+  "invocation": {
+    "default": { "target-function": "welcome", "parameter-names": ["name"] }
+  },
+  "rows": [["Ada"], ["Grace"]]
+}
+```
+
+Use `languages` inside the recipe for language-specific overrides.
+Add `expected` alongside `rows` to supply values for the recipe's result check, or set `per_element` to `false` to render the input as one call.
+Optional `variable_form`, `pre_indent_level`, and `initial_column` settings use the same binding and indentation rules as Literalizer.
+In the Objective-C options, you can adjust selector alignment and native argument layout.
+
+Choose **Callable description** to render a reference from metadata alone.
+Enter an object such as `{"name":"welcome","parameter-names":["name"]}`, or use `default` and `languages` to supply language overrides.
 
 Invalid source and option values appear in an alert above the editor.
 The affected control receives focus, and source parse errors select the reported character when Literalizer provides a line and column.

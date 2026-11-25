@@ -1,6 +1,6 @@
 import { highlightCode } from './highlighter.js?v=15';
 
-const worker = new Worker(new URL('./worker.js?v=17', import.meta.url), { type: 'module' });
+const worker = new Worker(new URL('./worker.js?v=18', import.meta.url), { type: 'module' });
 const $ = (selector) => document.querySelector(selector);
 const form = $('#converter');
 const operation = $('#operation');
@@ -45,6 +45,27 @@ const examples = {
 };
 let lastExample = source.value;
 let lastExampleRootKey = '';
+let inputMode = 'ordinary';
+const structuredExamples = {
+  invoke: {
+    invocation: { default: { 'target-function': 'welcome', 'parameter-names': ['name'] } },
+    rows: [['Ada'], ['Grace']],
+  },
+  describe: { name: 'welcome', 'parameter-names': ['name'] },
+};
+const inputByMode = new Map();
+
+function updateInputMode() {
+  const nextMode = Object.hasOwn(structuredExamples, operation.value)
+    ? operation.value
+    : 'ordinary';
+  if (nextMode === inputMode) return;
+  inputByMode.set(inputMode, { source: source.value, format: format.value });
+  const previous = inputByMode.get(nextMode);
+  source.value = previous?.source ?? JSON.stringify(structuredExamples[nextMode], null, 2);
+  format.value = previous?.format ?? 'JSON';
+  inputMode = nextMode;
+}
 
 function selectedExample() {
   const call = operation.value !== 'value';
@@ -259,7 +280,7 @@ function replaceVariableFormOptions(control, choices) {
 }
 
 function renderVariableForms() {
-  if (!schema) return;
+  if (!schema || inputMode !== 'ordinary') return;
   const config = schema.languages[language.value];
   replaceVariableFormOptions(
     $('#variable-form'),
@@ -588,10 +609,15 @@ function updateLanguageChoices() {
 }
 
 function setVisibility() {
+  updateInputMode();
   if (schema) updateLanguageChoices();
-  updateExampleIfPristine();
+  const structured = inputMode !== 'ordinary';
+  if (!structured) updateExampleIfPristine();
+  format.hidden = structured;
+  $('#output-options').hidden = structured;
+  $('label[for="source"]').textContent = structured ? 'Input (JSON)' : 'Input';
   paintInput();
-  const call = operation.value !== 'value';
+  const call = !structured && operation.value !== 'value';
   $('.language-control').classList.toggle('full-row', !call);
   $('#call-panel').hidden = !call;
   $('#compose-panel').hidden = operation.value !== 'compose';
@@ -636,7 +662,7 @@ function languageField(field) {
   } else if (field.kind === 'string' || field.kind === 'integer') {
     control = document.createElement('input');
     control.type = field.kind === 'integer' ? 'number' : 'text';
-    control.value = field.default;
+    control.value = field.default ?? '';
   } else {
     control = document.createElement('textarea');
     control.className = 'small-code';
@@ -706,7 +732,8 @@ function collectLanguageOptions() {
         throw new InputError(`${displayName(name)} must be a whole number.`, `language:${name}`);
       }
     } else if (kind === 'enum') value = control.value === '__none__' ? null : control.value;
-    else if (kind === 'string') value = control.value;
+    else if (kind === 'string')
+      value = defaultValue === null && !control.value ? null : control.value;
     else if (kind === 'python') {
       if (!control.value.trim()) continue;
       value = { $python: control.value.trim() };
@@ -808,7 +835,7 @@ function collectRequest() {
     language: language.value,
     language_label: language.selectedOptions[0]?.text ?? language.value,
     language_options: collectLanguageOptions(),
-    options: collectOptions(),
+    options: inputMode === 'ordinary' ? collectOptions() : {},
   };
   if (operation.value === 'compose') {
     request.declarations = collectDeclarations();

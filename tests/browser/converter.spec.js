@@ -169,3 +169,65 @@ test('converts published JSONC examples in value and call modes', async ({ page 
   await expect(page.locator('#output')).toHaveValue(/consume\(value="Ada"\)/);
   await expect(page.locator('#input-error-message')).toBeEmpty();
 });
+
+test('renders invocation recipes and callable descriptions', async ({ page }) => {
+  await waitForConverter(page);
+  const source = page.locator('#source');
+  const mode = page.getByLabel('Mode');
+  const output = page.locator('#output');
+
+  await source.fill('{"saved": true}');
+  await mode.selectOption('invoke');
+  await expect(output).toHaveValue('welcome(name="Ada")\nwelcome(name="Grace")');
+  await source.fill(
+    '{"invocation":{"default":{"target-function":"welcome","parameter-names":["name"]}},"rows":[["Linus"]]}',
+  );
+  await expect(output).toHaveValue('welcome(name="Linus")');
+
+  await mode.selectOption('describe');
+  await expect(output).toHaveValue('welcome(name)');
+  await source.fill('{"name":"welcome","parameter-names":["name"],"return-annotation":"str"}');
+  await expect(output).toHaveValue('welcome(name) -> str');
+
+  await mode.selectOption('value');
+  await expect(source).toHaveValue('{"saved": true}');
+  await mode.selectOption('invoke');
+  await expect(output).toHaveValue('welcome(name="Linus")');
+
+  await page.getByLabel('Output language').selectOption('ObjectiveC');
+  await source.fill(
+    JSON.stringify({
+      invocation: {
+        receiver: { reference: 'counter', type: 'Counter' },
+        selector: 'shouldSendNotification:notificationTimestamp:',
+        'parameter-types': ['NSString', 'float'],
+        'return-type': 'bool',
+        arguments: [{ input: 0 }, { input: 1 }],
+      },
+      rows: [['Ada', 100.0]],
+    }),
+  );
+  await expect(output).toHaveValue(
+    '[counter shouldSendNotification:@"Ada" notificationTimestamp:100.0];',
+  );
+  await page.getByText('Objective-C options', { exact: true }).click();
+  await page.locator('#language-option-picker').selectOption('native_argument_layout');
+  await page
+    .getByRole('combobox', { name: 'Native Argument Layout', exact: true })
+    .selectOption('MULTILINE');
+  await expect(output).toHaveValue(
+    '[counter shouldSendNotification:@"Ada"\n          notificationTimestamp:100.0];',
+  );
+});
+
+test('accepts a custom Elm null constructor as text', async ({ page }) => {
+  await waitForConverter(page);
+  await page.getByLabel('Output language').selectOption('Elm');
+  await page.locator('#source').fill('null');
+  await page.getByText('Elm options', { exact: true }).click();
+  await page
+    .getByRole('combobox', { name: 'Option', exact: true })
+    .selectOption('null_constructor_name');
+  await page.getByRole('textbox', { name: 'Null Constructor Name', exact: true }).fill('Missing');
+  await expect(page.locator('#output')).toHaveValue(/\bMissing\b/);
+});
