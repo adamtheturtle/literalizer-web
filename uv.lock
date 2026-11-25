@@ -243,8 +243,8 @@ wheels = [
 
 [[package]]
 name = "literalizer"
-version = "2026.11.4.2"
-source = { path = "dist/literalizer-2026.11.4.2-py3-none-any.whl" }
+version = "2026.11.25"
+source = { path = "dist/literalizer-2026.11.25-py3-none-any.whl" }
 dependencies = [
     { name = "beartype" },
     { name = "json5-document" },
@@ -256,7 +256,7 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { filename = "literalizer-2026.11.4.2-py3-none-any.whl", hash = "sha256:842cdc013370503cd4de37986b946bb6444060ded3c9bc95bb427dcd62469edf" },
+    { filename = "literalizer-2026.11.25-py3-none-any.whl", hash = "sha256:2292898eed99405ce41467cddcbfcf7bb5c81bb44400d0415d760a7506feae13" },
 ]
 
 [package.metadata]
@@ -302,7 +302,7 @@ dev = "<3.16"
 dev = [
     { name = "actionlint-py", marker = "python_full_version < '3.16'", specifier = "==1.7.12.25" },
     { name = "karva", marker = "python_full_version < '3.16'", specifier = "==0.0.1a13" },
-    { name = "literalizer", marker = "python_full_version < '3.16'", path = "dist/literalizer-2026.11.4.2-py3-none-any.whl" },
+    { name = "literalizer", marker = "python_full_version < '3.16'", path = "dist/literalizer-2026.11.25-py3-none-any.whl" },
     { name = "mypy", marker = "python_full_version < '3.16'", specifier = "==2.4.1" },
     { name = "no-defaults", marker = "python_full_version < '3.16'", specifier = "==2026.9.1" },
     { name = "prek", marker = "python_full_version < '3.16'", specifier = "==0.5.11" },

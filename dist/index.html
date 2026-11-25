@@ -9,7 +9,7 @@
     />
     <title>Literalizer</title>
     <link rel="stylesheet" href="./style.css?v=35" />
-    <script type="module" src="./main.js?v=37"></script>
+    <script type="module" src="./main.js?v=38"></script>
   </head>
   <body>
     <main class="app">
@@ -23,6 +23,8 @@
                 <option value="value">Value</option>
                 <option value="call">Function calls</option>
                 <option value="compose">Calls with declarations</option>
+                <option value="invoke">Invocation recipe</option>
+                <option value="describe">Callable description</option>
               </select>
             </label>
           </div>
@@ -88,7 +90,7 @@
           </div>
         </div>
         <div class="option-panels">
-          <details>
+          <details id="output-options">
             <summary>Output options</summary>
             <div class="option-grid">
               <label class="check"

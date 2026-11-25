@@ -16,9 +16,11 @@ from literalizer import (
     IdentifierCase,
     InputFormat,
     NewVariable,
+    describe_callable,
     literalize,
     literalize_call,
     literalize_call_with_declarations,
+    literalize_invocations,
 )
 from literalizer.exceptions import (
     CallsNotSupportedByLanguageError,
@@ -73,7 +75,8 @@ def _enum_type(hint):
 
 def _field_schema(cls, field, hints, instance):
     value = getattr(instance, field.name)
-    enum_type = _enum_type(hints.get(field.name))
+    hint = hints.get(field.name)
+    enum_type = _enum_type(hint)
     if enum_type is not None:
         return {
             "name": field.name,
@@ -86,6 +89,8 @@ def _field_schema(cls, field, hints, instance):
         return {"name": field.name, "kind": "bool", "default": value}
     if isinstance(value, str):
         return {"name": field.name, "kind": "string", "default": value}
+    if value is None and set(typing.get_args(hint)) == {str, type(None)}:
+        return {"name": field.name, "kind": "string", "default": None}
     if isinstance(value, int):
         return {"name": field.name, "kind": "integer", "default": value}
     if isinstance(value, frozenset):
@@ -94,7 +99,7 @@ def _field_schema(cls, field, hints, instance):
             "kind": "string_set",
             "default_count": len(value),
         }
-    if isinstance(value, Mapping):
+    if isinstance(value, Mapping) or field.name == "qualified_imports":
         return {"name": field.name, "kind": "mapping_pairs"}
     return {"name": field.name, "kind": "python"}
 
@@ -170,6 +175,15 @@ def _language_option(cls, name, value):
     enum_type = _enum_type(hints.get(field.name))
     if enum_type is not None:
         return None if value is None else enum_type[value]
+    if name == "qualified_imports":
+        if not isinstance(value, list) or any(
+            not isinstance(pair, list)
+            or len(pair) != 2
+            or any(not isinstance(item, str) for item in pair)
+            for pair in value
+        ):
+            raise InputProblem("Enter JSON pairs of module and alias names.", f"language:{name}")
+        return tuple(tuple(pair) for pair in value)
     if name == "record_shape_names":
         return {frozenset(keys): label for keys, label in value}
     if name == "empty_container_type_hints":
@@ -233,6 +247,54 @@ def _result_data(result):
     }
 
 
+def _structured_conversion(source, operation, language, cls):
+    """Render callable metadata or a batch of calls from a JSON object."""
+    try:
+        payload = json.loads(source)
+    except json.JSONDecodeError as error:
+        raise InputProblem(
+            "Could not read the JSON input. Check its syntax.",
+            "source",
+            str(error),
+            error.lineno,
+            error.colno,
+        ) from error
+    if not isinstance(payload, dict):
+        raise InputProblem("Enter a JSON object.", "source")
+    try:
+        if operation == "describe":
+            code = describe_callable(language=language, description=payload)
+            return {"code": code, "bare_code": code, "declaration_code": code}
+
+        invocation = payload.get("invocation")
+        if not isinstance(invocation, dict) or "rows" not in payload:
+            raise InputProblem('Supply an "invocation" object and "rows".', "source")
+        variable_form = _variable_form(payload.get("variable_form"), cls)
+        if isinstance(variable_form, BothVariableForms):
+            raise InputProblem(
+                "Choose NewVariable or ExistingVariable for a recipe binding.", "source"
+            )
+        return _result_data(
+            literalize_invocations(
+                source=json.dumps(payload["rows"], ensure_ascii=False),
+                input_format=InputFormat.JSON,
+                language=language,
+                invocation=invocation,
+                per_element=payload.get("per_element", True),
+                zip_source=(
+                    json.dumps(payload["expected"], ensure_ascii=False)
+                    if "expected" in payload
+                    else None
+                ),
+                variable_form=variable_form,
+                pre_indent_level=payload.get("pre_indent_level", 0),
+                initial_column=payload.get("initial_column", 0),
+            )
+        )
+    except LiteralizerError as error:
+        raise InputProblem(str(error), "source", path=error.path) from error
+
+
 def _convert(request):
     """Execute one browser request."""
     cls = getattr(languages, request["language"])
@@ -243,8 +305,10 @@ def _convert(request):
         }
     )
     source = request["source"]
-    input_format = InputFormat[request["format"]]
     operation = request["operation"]
+    if operation in {"describe", "invoke"}:
+        return _structured_conversion(source, operation, language, cls)
+    input_format = InputFormat[request["format"]]
     if operation == "value":
         result = literalize(
             source=source,
@@ -444,6 +508,16 @@ def convert(request_json):
         )
     except LiteralizerError as error:
         return json.dumps({"ok": False, "error": _literalizer_error(error, request)})
+    except RecursionError:
+        return json.dumps(
+            {
+                "ok": False,
+                "error": {
+                    "message": "The input is nested too deeply to convert.",
+                    "field": "source",
+                },
+            }
+        )
     except (KeyError, TypeError, ValueError, SyntaxError, NameError) as error:
         return json.dumps(
             {
