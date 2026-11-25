@@ -1,6 +1,6 @@
 import { highlightCode } from './highlighter.js?v=15';
 
-const worker = new Worker(new URL('./worker.js?v=18', import.meta.url), { type: 'module' });
+const worker = new Worker(new URL('./worker.js?v=19', import.meta.url), { type: 'module' });
 const $ = (selector) => document.querySelector(selector);
 const form = $('#converter');
 const operation = $('#operation');
