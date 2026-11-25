@@ -6,7 +6,7 @@ async function initialize() {
   await pyodide.loadPackage('micropip');
   pyodide.globals.set(
     '_web_wheel_url',
-    new URL('./literalizer-2026.11.25.1-py3-none-any.whl', self.location.href).href,
+    new URL('./literalizer-2026.11.25.2-py3-none-any.whl', self.location.href).href,
   );
   await pyodide.runPythonAsync(`
 import micropip
