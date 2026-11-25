@@ -6,7 +6,7 @@ Pyodide and the pure-Python dependencies download on first load.
 Syntax highlighting is bundled locally with highlight.js, so typing and viewing generated code do not make additional requests to a highlighting service.
 Languages without a dedicated grammar get basic highlighting for strings, numbers, and comments.
 
-The included wheel is the unmodified Literalizer 2026.11.25.1 release from PyPI (SHA-256 `2fecaa5eca09603c81f35320333694a1fe988df9eb98bc0a46812f24d5bfbbf5`).
+The included wheel is the unmodified Literalizer 2026.11.25.2 release from PyPI (SHA-256 `dc84ef6bd28ab28106529cd287ef81b12969fb60bf5f285422266ee9617c1b52`).
 The worker uses normal `micropip.install(...)` dependency resolution.
 The published dependency marker excludes the native YAML C accelerator on Emscripten.
 `ruamel.yaml` uses its pure-Python parser in the browser.
